@@ -12,6 +12,9 @@ struct Cli {
     #[arg(long)]
     repl: bool,
 
+    #[arg(long)]
+    mcp: bool,
+
     #[arg(long, short)]
     version: bool,
 
@@ -74,6 +77,11 @@ fn main() {
 
     if cli.version {
         println!("mnemo 0.1.0");
+        return;
+    }
+
+    if cli.mcp {
+        mnemo::mcp::serve_stdio(&cli.agent_id);
         return;
     }
 
