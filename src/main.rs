@@ -1,6 +1,5 @@
 use clap::Parser;
 use mnemo::repl::Repl;
-use tracing::info;
 
 #[derive(Parser, Debug)]
 #[command(name = "mnemo")]
@@ -24,8 +23,10 @@ fn main() {
         return;
     }
 
-    println!("Agent: {}", cli.agent_id);
     if cli.repl {
-        println!("REPL mode not yet implemented");
+        let mut repl = Repl::new(&cli.agent_id).expect("Failed to initialize REPL");
+        repl.run();
+    } else {
+        println!("Use --repl for interactive mode or subcommands for one-shot");
     }
 }
