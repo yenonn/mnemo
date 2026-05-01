@@ -1,0 +1,50 @@
+warning: unused import: `mnemo::repl::Repl`
+ --> src/main.rs:2:5
+  |
+2 | use mnemo::repl::Repl;
+  |     ^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `mnemo::repl::Repl`
+ --> src/main.rs:2:5
+  |
+2 | use mnemo::repl::Repl;
+  |     ^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `tracing::info`
+ --> src/main.rs:3:5
+  |
+3 | use tracing::info;
+  |     ^^^^^^^^^^^^^
+
+   Compiling mnemo v0.1.0 (/Users/yenonnhiu/Developments/ai-databases/mnemo)
+warning: unused import: `tracing::info`
+ --> src/main.rs:3:5
+  |
+3 | use tracing::info;
+  |     ^^^^^^^^^^^^^
+
+   Compiling mnemo v0.1.0 (/Users/yenonnhiu/Developments/ai-databases/mnemo)
+warning: `mnemo` (bin "mnemo" test) generated 2 warnings (run `cargo fix --bin "mnemo" -p mnemo --tests` to apply 2 suggestions)
+warning: `mnemo` (bin "mnemo") generated 2 warnings (2 duplicates)
+warning: `mnemo` (bin "mnemo" test) generated 2 warnings (run `cargo fix --bin "mnemo" -p mnemo --tests` to apply 2 suggestions)
+warning: `mnemo` (bin "mnemo") generated 2 warnings (2 duplicates)
+error[E0432]: unresolved import `mnemo::protocol::parse_command`
+ --> tests/protocol_parser_test.rs:1:32
+  |
+1 | use mnemo::protocol::{Command, parse_command};
+  |                                ^^^^^^^^^^^^^ no `parse_command` in `protocol`
+
+error[E0432]: unresolved import `mnemo::protocol::parse_command`
+ --> tests/protocol_parser_test.rs:1:32
+  |
+1 | use mnemo::protocol::{Command, parse_command};
+  |                                ^^^^^^^^^^^^^ no `parse_command` in `protocol`
+
+For more information about this error, try `rustc --explain E0432`.
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `mnemo` (test "protocol_parser_test") due to 1 previous error
+error: could not compile `mnemo` (test "protocol_parser_test") due to 1 previous error
