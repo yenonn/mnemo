@@ -1,0 +1,49 @@
+[package]
+name = "mnemo"
+version = "0.1.0"
+edition = "2021"
+authors = ["mnemo contributors"]
+description = "Agent memory database -- sqlite3 for AI memory"
+license = "MIT"
+repository = "https://github.com/mnemonics/mnemo"
+
+[lib]
+name = "mnemo"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mnemo"
+path = "src/main.rs"
+
+[dependencies]
+# SQLite (bundled so no system dependency)
+rusqlite = { version = "0.31", features = ["bundled", "load_extension", "chrono"] }
+
+# Async runtime + HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1.37", features = ["rt-multi-thread", "macros", "sync"] }
+
+# CLI parsing
+clap = { version = "4.5", features = ["derive"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+
+# ID generation
+nanoid = "0.4"
+
+# Error handling
+thiserror = "1.0"
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.1"
+tempfile = "3.10"
