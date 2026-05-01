@@ -4,3 +4,4 @@ pub mod tier;
 pub mod embed;
 pub mod lifecycle;
 pub mod repl;
+pub mod extract;

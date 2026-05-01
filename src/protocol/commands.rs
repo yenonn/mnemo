@@ -28,6 +28,9 @@ pub enum Command {
         conditions: Vec<(String, String, String)>,
     },
     Status,
+    Extract {
+        text: String,
+    },
     Pragma {
         key: Option<String>,
         value: Option<String>,
@@ -70,6 +73,9 @@ impl fmt::Display for Command {
             Command::Consolidate { from, to, .. } => write!(f, "CONSOLIDATE {} TO {}", from, to),
             Command::Reflect { .. } => write!(f, "REFLECT"),
             Command::Status => write!(f, "STATUS"),
+            Command::Extract { text } => {
+                write!(f, "EXTRACT \"{}\"", text)
+            }
             Command::Pragma { key, value } => match (key, value) {
                 (Some(k), Some(v)) => write!(f, "PRAGMA {} = {}", k, v),
                 _ => write!(f, "PRAGMA"),

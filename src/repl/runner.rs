@@ -82,6 +82,7 @@ impl Repl {
             } => self.cmd_recall(query, memory_types, limit),
             Status => self.cmd_status(),
             Forget { id, .. } => self.cmd_forget(id),
+            Extract { text } => self.cmd_extract(text),
             Pragma { key, value } => self.cmd_pragma(key, value),
             Consolidate { from, to, .. } => self.cmd_consolidate(from, to),
             Reflect { .. } => self.cmd_reflect(),
@@ -264,6 +265,50 @@ impl Repl {
                 code: "DB_ERROR".to_string(),
                 message: e.to_string(),
             },
+        }
+    }
+
+    fn cmd_extract(&mut self, text: String) -> Response {
+        use crate::extract::{OpenAiConfig, extract_memories, ExtractResult};
+        use crate::tier::TierManager;
+
+        let config = OpenAiConfig::from_env();
+        let rt = tokio::runtime::Runtime::new().unwrap();
+
+        let results: Vec<ExtractResult> = match rt.block_on(extract_memories(&text, config.as_ref())) {
+            Ok(r) => r,
+            Err(e) => {
+                return Response::Error {
+                    code: "EXTRACT_ERROR".to_string(),
+                    message: e.to_string(),
+                };
+            }
+        };
+
+        let mut manager = TierManager::new(self.db.conn(), 100).unwrap();
+        let mut stored_ids = Vec::new();
+
+        for result in results {
+            let store_result = match result.tier.as_str() {
+                "working" => manager.remember_working(&result.content),
+                "episodic" => manager.remember_episodic(&result.content, result.importance),
+                "semantic" => manager.remember_semantic(&result.content, result.importance, &[]),
+                _ => manager.remember_semantic(&result.content, result.importance, &[]),
+            };
+
+            match store_result {
+                Ok(id) => stored_ids.push(id),
+                Err(e) => {
+                    return Response::Error {
+                        code: "DB_ERROR".to_string(),
+                        message: e.to_string(),
+                    };
+                }
+            }
+        }
+
+        Response::Ok {
+            message: format!("Extracted and stored {} memories: {}", stored_ids.len(), stored_ids.join(", ")),
         }
     }
 

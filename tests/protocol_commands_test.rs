@@ -110,6 +110,14 @@ fn test_pragma_get_display() {
 }
 
 #[test]
+fn test_extract_command_display() {
+    let cmd = Command::Extract {
+        text: "I prefer dark mode".to_string(),
+    };
+    assert_eq!(format!("{}", cmd), "EXTRACT \"I prefer dark mode\"");
+}
+
+#[test]
 fn test_recall_with_conditions_display() {
     let cmd = Command::Recall {
         query: "query".to_string(),

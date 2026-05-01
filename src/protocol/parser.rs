@@ -31,6 +31,7 @@ pub fn parse_command(input: &str) -> Result<Command, Box<dyn Error>> {
         "CONSOLIDATE" => parse_consolidate(&tokens),
         "REFLECT" => parse_reflect(&tokens),
         "STATUS" => Ok(Command::Status),
+        "EXTRACT" => parse_extract(&tokens),
         "PRAGMA" => parse_pragma(&tokens),
         _ => Err(Box::new(ParseError { message: format!("Unknown command: {}", verb) })),
     }
@@ -144,6 +145,11 @@ fn parse_pragma(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
     Err(Box::new(ParseError {
         message: "PRAGMA parsing not fully implemented".to_string(),
     }))
+}
+
+fn parse_extract(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
+    let text = extract_quoted_string(tokens)?;
+    Ok(Command::Extract { text })
 }
 
 // --- Helper functions ---

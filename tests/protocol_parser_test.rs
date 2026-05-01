@@ -144,6 +144,14 @@ fn test_parse_pragma_invalid() {
 }
 
 #[test]
+fn test_parse_extract() {
+    let cmd = parse_command("EXTRACT \"I prefer dark mode\";").unwrap();
+    assert_eq!(cmd, Command::Extract {
+        text: "I prefer dark mode".to_string(),
+    });
+}
+
+#[test]
 fn test_parse_recall_without_types() {
     let cmd = parse_command("RECALL \"query\" LIMIT 10;").unwrap();
     assert_eq!(cmd, Command::Recall {

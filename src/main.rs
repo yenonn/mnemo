@@ -50,6 +50,11 @@ enum MnemoCommand {
         #[arg(value_name = "TO")]
         to: String,
     },
+    /// Extract implicit memories from natural language text
+    Extract {
+        #[arg(value_name = "TEXT")]
+        text: String,
+    },
     /// Forget a memory by id
     Forget {
         #[arg(value_name = "ID")]
@@ -101,6 +106,9 @@ fn main() {
             MnemoCommand::Init => repl.execute(Command::Init),
             MnemoCommand::Consolidate { from, to } => {
                 repl.execute(Command::Consolidate { from, to, conditions: vec![] })
+            }
+            MnemoCommand::Extract { text } => {
+                repl.execute(Command::Extract { text })
             }
             MnemoCommand::Forget { id } => {
                 repl.execute(Command::Forget { id: Some(id), conditions: vec![] })
