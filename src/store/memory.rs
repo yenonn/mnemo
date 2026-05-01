@@ -49,6 +49,10 @@ impl<'a> MemoryStore<'a> {
         MemoryStore { conn }
     }
 
+    pub fn conn(&self) -> &'a Connection {
+        self.conn
+    }
+
     pub fn insert(
         &self,
         memory_type: &str,
