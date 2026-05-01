@@ -1,0 +1,25 @@
+use mnemo::store::{MnemoDb, ConfigStore};
+use tempfile::TempDir;
+
+#[test]
+fn test_config_crud() {
+    let dir = TempDir::new().unwrap();
+    let db = MnemoDb::new(dir.path().join("test.db")).unwrap();
+    let store = ConfigStore::new(db.conn());
+
+    // Insert
+    store.set("embedding_provider", "ollama").unwrap();
+    assert_eq!(store.get("embedding_provider").unwrap(), Some("ollama".to_string()));
+
+    // Update (should overwrite)
+    store.set("embedding_provider", "openai").unwrap();
+    assert_eq!(store.get("embedding_provider").unwrap(), Some("openai".to_string()));
+
+    // Get all
+    let all = store.get_all().unwrap();
+    assert_eq!(all.len(), 1);
+
+    // Delete
+    store.delete("embedding_provider").unwrap();
+    assert_eq!(store.get("embedding_provider").unwrap(), None);
+}
