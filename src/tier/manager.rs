@@ -9,9 +9,26 @@ pub struct TierManager<'a> {
 
 impl<'a> TierManager<'a> {
     pub fn new(conn: &'a Connection, working_capacity: usize) -> rusqlite::Result<Self> {
+        let mut working = WorkingBuffer::with_capacity(working_capacity);
+        let store = MemoryStore::new(conn);
+        // Hydrate working buffer from existing DB entries
+        let mut stmt = conn.prepare(
+            "SELECT id, content FROM memories WHERE memory_type = 'working' ORDER BY created_at DESC LIMIT ?"
+        )?;
+        let rows = stmt.query_map([working_capacity as i64], |row| {
+            let id: String = row.get(0)?;
+            let content: String = row.get(1)?;
+            Ok((id, content))
+        })?;
+        // Collect then reverse so buffer ends up in chronological order
+        let mut loaded: Vec<(String, String)> = rows.collect::<Result<_, _>>()?;
+        loaded.reverse();
+        for (id, content) in loaded {
+            working.push(&id, &content);
+        }
         Ok(TierManager {
-            working: WorkingBuffer::with_capacity(working_capacity),
-            store: MemoryStore::new(conn),
+            working,
+            store,
         })
     }
 
