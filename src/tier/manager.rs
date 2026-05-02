@@ -60,6 +60,15 @@ impl<'a> TierManager<'a> {
         self.store.search_content(query, memory_types, limit)
     }
 
+    pub fn recall_expanded(
+        &self,
+        expanded_terms: &[String],
+        memory_types: &[String],
+        limit: usize,
+    ) -> rusqlite::Result<Vec<Memory>> {
+        self.store.search_content_expanded(expanded_terms, memory_types, limit)
+    }
+
     pub fn consolidate_working_to_episodic(
         &mut self,
     ) -> rusqlite::Result<Option<String>> {
