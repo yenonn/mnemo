@@ -708,6 +708,16 @@ fn handle_forget(
 pub fn serve_stdio(agent_id: &str) {
     use std::io::{self, BufRead, Write};
 
+    // Eager warmup: open the DB once so that `last_activity` is seeded and
+    // lifecycle hooks (including auto_recall) fire before the first request.
+    let db_path = get_db_path(agent_id);
+    ensure_db_dir(&db_path);
+    if let Ok(db) = crate::store::MnemoDb::new(&db_path) {
+        if let Ok(mut manager) = crate::tier::TierManager::new(db.conn(), 100) {
+            let _ = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+        }
+    }
+
     let stdin = io::stdin();
     let stdout = io::stdout();
     let mut stdout_lock = stdout.lock();
