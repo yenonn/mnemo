@@ -1,5 +1,6 @@
 use rusqlite::{Connection, Result as SqliteResult};
 use std::path::Path;
+use crate::lifecycle::config;
 
 pub struct MnemoDb {
     conn: Connection,
@@ -17,12 +18,17 @@ impl MnemoDb {
 
         let db = MnemoDb { conn };
         db.init_schema()?;
+        db.seed_defaults()?;
         Ok(db)
     }
 
     fn init_schema(&self) -> SqliteResult<()> {
         self.conn.execute_batch(SCHEMA_SQL)?;
         Ok(())
+    }
+
+    fn seed_defaults(&self) -> SqliteResult<()> {
+        config::seed_defaults(&self.conn)
     }
 
     pub fn conn(&self) -> &Connection {

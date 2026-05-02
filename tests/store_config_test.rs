@@ -15,9 +15,9 @@ fn test_config_crud() {
     store.set("embedding_provider", "openai").unwrap();
     assert_eq!(store.get("embedding_provider").unwrap(), Some("openai".to_string()));
 
-    // Get all
+    // Get all (should include lifecycle defaults)
     let all = store.get_all().unwrap();
-    assert_eq!(all.len(), 1);
+    assert_eq!(all.len(), 6); // 1 user key + 5 lifecycle defaults
 
     // Delete
     store.delete("embedding_provider").unwrap();
