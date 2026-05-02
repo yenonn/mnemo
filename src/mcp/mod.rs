@@ -317,7 +317,11 @@ fn handle_recall(
                 None => vec!["episodic".to_string(), "semantic".to_string()],
             };
 
-            match manager.recall(query, &types_to_search, limit) {
+            // Expand query with synonyms and morphology for broader recall
+            let query_terms: Vec<String> = query.split_whitespace().map(|s| s.to_string()).collect();
+            let expanded = crate::context::expand_query(&query_terms);
+
+            match manager.recall_expanded(&expanded, &types_to_search, limit) {
                 Ok(memories) => {
                     let memory_texts: Vec<String> = memories
                         .iter()
