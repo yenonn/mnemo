@@ -71,6 +71,19 @@ impl<'a> TierManager<'a> {
             .search_content_expanded(expanded_terms, memory_types, limit)
     }
 
+    pub fn recall_hybrid(
+        &self,
+        query_text: &str,
+        expanded_terms: &[String],
+        memory_types: &[String],
+        limit: usize,
+        vstore: &crate::store::VectorStore,
+        gateway: &crate::embed::EmbeddingGateway,
+    ) -> rusqlite::Result<Vec<Memory>> {
+        self.store
+            .search_hybrid(query_text, expanded_terms, memory_types, limit, vstore, gateway)
+    }
+
     pub fn consolidate_working_to_episodic(&mut self) -> rusqlite::Result<Option<String>> {
         let entries = self.working.drain();
         if entries.is_empty() {

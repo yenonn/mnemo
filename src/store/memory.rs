@@ -138,10 +138,6 @@ impl<'a> MemoryStore<'a> {
     }
 
     /// Search memories using an expanded query with OR-joined synonyms.
-    ///
-    /// Each term in `expanded_terms` is joined with `OR` so a match on
-    /// any synonym returns the memory, casting a wider net than exact
-    /// lexical match alone.
     pub fn search_content_expanded(
         &self,
         expanded_terms: &[String],
@@ -151,8 +147,102 @@ impl<'a> MemoryStore<'a> {
         if expanded_terms.is_empty() {
             return Ok(Vec::new());
         }
-
         let fts_query = expanded_terms.join(" OR ");
         self.search_content(&fts_query, memory_types, limit)
+    }
+
+    /// Search memories using both FTS5 (expanded) and vector (HNSW) together.
+    ///
+    /// When sqlite-vec is available and an embedding provider is configured,
+    /// the query text is embedded and searched against `memory_vectors`.
+    ///
+    /// A weighted merge (`0.4 * BM25_norm + 0.6 * vector_norm`) combines
+    /// both sources. FTS5 alone is returned when vectors are unavailable.
+    pub fn search_hybrid(
+        &self,
+        query_text: &str,
+        expanded_terms: &[String],
+        memory_types: &[String],
+        limit: usize,
+        vstore: &super::VectorStore,
+        gateway: &crate::embed::EmbeddingGateway,
+    ) -> SqliteResult<Vec<Memory>> {
+        use std::collections::HashMap;
+
+        // 1. FTS5 search
+        let fts_results =
+            self.search_content_expanded(expanded_terms, memory_types, limit * 2)?;
+
+        // 2. Vector search (if available)
+        let vec_results: Vec<(String, f64)> = if vstore.available() {
+            match gateway.embed(query_text) {
+                Ok(vec) => {
+                    match vstore.search(&vec, limit * 2) {
+                        Ok(rows) => rows,
+                        Err(_) => Vec::new(),
+                    }
+                }
+                Err(_) => Vec::new(),
+            }
+        } else {
+            Vec::new()
+        };
+
+        // No vectors → return FTS5 results only
+        if vec_results.is_empty() {
+            return Ok(fts_results.into_iter().take(limit).collect());
+        }
+
+        // 3. Score merging
+        let fts_count = fts_results.len();
+        let mut score_map: HashMap<String, f64> = HashMap::new();
+
+        // BM25 proxy: descending by position (row 0 = highest)
+        for (i, mem) in fts_results.into_iter().enumerate() {
+            let bm25_norm = if fts_count > 1 {
+                1.0 - (i as f64 / (fts_count.saturating_sub(1) as f64))
+            } else {
+                1.0
+            };
+            score_map.insert(mem.id, 0.4 * bm25_norm);
+        }
+
+        // Vector normalization: (max_dist - dist) / range
+        if !vec_results.is_empty() {
+            let min_dist = vec_results
+                .iter()
+                .map(|(_, d)| *d)
+                .fold(f64::INFINITY, f64::min);
+            let max_dist = vec_results
+                .iter()
+                .map(|(_, d)| *d)
+                .fold(f64::NEG_INFINITY, f64::max);
+            let dist_range = max_dist - min_dist;
+
+            for (id, dist) in &vec_results {
+                let cos_norm = if dist_range > 0.0 {
+                    ((max_dist - dist) / dist_range).max(0.0)
+                } else {
+                    1.0
+                };
+                score_map
+                    .entry(id.clone())
+                    .and_modify(|s| *s += 0.6 * cos_norm)
+                    .or_insert(0.6 * cos_norm);
+            }
+        }
+
+        // 4. Rank descending, trim to limit, hydrate full rows
+        let mut ranked: Vec<(String, f64)> = score_map.into_iter().collect();
+        ranked
+            .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        let mut output = Vec::with_capacity(limit.min(ranked.len()));
+        for (id, _) in ranked.iter().take(limit) {
+            if let Ok(Some(mem)) = self.get(id) {
+                output.push(mem);
+            }
+        }
+        Ok(output)
     }
 }
