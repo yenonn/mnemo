@@ -153,7 +153,11 @@ impl Repl {
             memory_types
         };
 
-        match manager.recall(&query, &types_to_search, limit) {
+        // Split query into terms and expand with synonyms + morphology
+        let query_terms: Vec<String> = query.split_whitespace().map(|s| s.to_string()).collect();
+        let expanded = crate::context::expand_query(&query_terms);
+
+        match manager.recall_expanded(&expanded, &types_to_search, limit) {
             Ok(memories) => {
                 let responses: Vec<Response> = memories
                     .into_iter()
