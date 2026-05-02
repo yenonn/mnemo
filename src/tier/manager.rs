@@ -91,6 +91,9 @@ impl<'a> TierManager<'a> {
             return Ok(None);
         }
 
+        // Delete DB working rows
+        self.store.conn().execute("DELETE FROM memories WHERE memory_type = 'working'", [])?;
+
         let contents: Vec<String> = entries.iter().map(|e| e.content.clone()).collect();
         let summary = format!("[Consolidated] {}", contents.join("; "));
 
@@ -98,6 +101,11 @@ impl<'a> TierManager<'a> {
             .store
             .insert("episodic", &summary, 0.5, "consolidation", &[])?;
         Ok(Some(id))
+    }
+
+    pub fn clear_working(&mut self) {
+        self.working.clear();
+        let _ = self.store.conn().execute("DELETE FROM memories WHERE memory_type = 'working'", []);
     }
 
     pub fn consolidate_episodic_to_semantic(
