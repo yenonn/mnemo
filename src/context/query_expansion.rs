@@ -8,7 +8,7 @@
 /// organized loosely by domain.
 static SYNONYM_MAP: &[(&str, &[&str])] = &[
     // Communication / scheduling
-    ("todos",       &["tasks", "task", "todo", "to-do", "checklist"]),
+    ("todos",       &["tasks", "task", "todo", "checklist"]),
     ("meetings",    &["meeting", "calls", "sync", "standup", "review"]),
     ("yesterday",   &["yesterday", "last night", "previous day"]),
 
@@ -101,15 +101,10 @@ pub fn expand_query(terms: &[String]) -> Vec<String> {
 
         // 1. Synonym map: bidirectional match (term is key or is in synonyms)
         for (key, synonyms) in SYNONYM_MAP.iter() {
-            let mut matched = false;
-            if *key == lower {
-                matched = true;
-            } else if synonyms.contains(&lower.as_str()) {
-                matched = true;
-            }
-
-            if matched {
+            if *key == lower || synonyms.contains(&lower.as_str()) {
+                // Add the canonical key
                 result.push(key.to_string());
+                // Add every synonym in the cluster
                 for &synonym in *synonyms {
                     result.push(synonym.to_string());
                 }

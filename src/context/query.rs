@@ -1,5 +1,3 @@
-use std::fmt;
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct QueryIntent {
     pub confidence: f64,
@@ -79,18 +77,19 @@ pub fn analyze_intent(text: &str) -> Option<QueryIntent> {
         }
     }
 
-    // Personal pronouns + possession indicate memory retrieval
-    if lower.contains("my ") || lower.contains("i ") {
-        if lower.contains("have") || lower.contains("did") || lower.contains("was") {
-            retrieve_score += 0.3f64;
-            query_terms.push("user".to_string());
-        }
+    // Personal pronouns + possession about past
+    if (lower.contains("my ") || lower.contains("i "))
+        && (lower.contains("have") || lower.contains("did") || lower.contains("was"))
+    {
+        retrieve_score += 0.3f64;
+        query_terms.push("user".to_string());
     }
 
     // Extract search terms (nouns and topics)
-    let stop_words: &[&str] = &["what", "the", "a", "an", "is", "are", "was", "were", 
+    let stop_words: &[&str] = &["what", "the", "a", "an", "is", "are", "was", "were",
                                 "do", "does", "did", "have", "has", "had", "be", "been",
-                                "about", "for", "with", "from", "to", "of", "in", "on"];
+                                "about", "for", "with", "from", "to", "of", "in", "on",
+                                "my", "mine"];
     
     for word in &words {
         let clean = word.trim_matches(|c: char| !c.is_alphanumeric());
@@ -104,9 +103,7 @@ pub fn analyze_intent(text: &str) -> Option<QueryIntent> {
         IntentType::RetrieveAll
     } else if time_range.is_some() {
         IntentType::RetrieveRecent
-    } else if !topic_keywords.is_empty() {
-        IntentType::RetrieveByTopic
-    } else if retrieve_score > 0.4f64 {
+    } else if !topic_keywords.is_empty() || retrieve_score > 0.4f64 {
         IntentType::RetrieveByTopic
     } else {
         IntentType::Unknown
