@@ -601,12 +601,53 @@ fn handle_bind(
                     }),
                 )
             } else {
-                McpResponse::success(
-                    id,
-                    json!({
-                        "content": [{"type": "text", "text": "No clear retrieval intent detected. Message stored in working memory."}]
-                    }),
+                // Check auto_remember_confirmation config
+                let confirmation_needed = crate::lifecycle::config::get_bool(
+                    db.conn(),
+                    "auto_remember_confirmation",
+                    false,
                 )
+                .unwrap_or(false);
+
+                if confirmation_needed {
+                    // Extract memories but return them for confirmation instead of storing
+                    use crate::extract::{extract_memories, OpenAiConfig};
+                    let config = OpenAiConfig::from_env();
+                    let rt = tokio::runtime::Runtime::new().unwrap();
+                    match rt.block_on(extract_memories(text, config.as_ref())) {
+                        Ok(results) if !results.is_empty() => {
+                            let extracted: Vec<String> = results
+                                .iter()
+                                .map(|r| format!("[{} | {:.2}] {}", r.tier, r.importance, r.content))
+                                .collect();
+                            let response_text = format!(
+                                "Confirmation required: The following memories were extracted but NOT stored. Reply with 'remember' to store them, or ignore to discard:\n\n{}",
+                                extracted.join("\n")
+                            );
+                            McpResponse::success(
+                                id,
+                                json!({
+                                    "content": [{"type": "text", "text": response_text}]
+                                }),
+                            )
+                        }
+                        _ => {
+                            McpResponse::success(
+                                id,
+                                json!({
+                                    "content": [{"type": "text", "text": "Store intent detected but nothing extracted for confirmation."}]
+                                }),
+                            )
+                        }
+                    }
+                } else {
+                    McpResponse::success(
+                        id,
+                        json!({
+                            "content": [{"type": "text", "text": "No clear retrieval intent detected. Message stored in working memory."}]
+                        }),
+                    )
+                }
             }
         }
         Err(e) => McpResponse::error(id, -32603, format!("DB init error: {}", e)),

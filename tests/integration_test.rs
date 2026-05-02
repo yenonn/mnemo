@@ -140,6 +140,29 @@ fn test_bind_retrieve_intent() {
 }
 
 #[test]
+fn test_bind_store_intent_with_confirmation() {
+    let dir = TempDir::new().unwrap();
+    let agent_id = "test-agent-bind-confirm";
+
+    // Set auto_remember_confirmation to true
+    let mut cmd = Command::cargo_bin("mnemo").unwrap();
+    cmd.env("HOME", dir.path());
+    cmd.arg("--agent-id").arg(agent_id);
+    cmd.arg("pragma").arg("auto_remember_confirmation").arg("true");
+    cmd.assert().success();
+
+    // Use BIND with clear store signal — should ask for confirmation, not auto-store
+    let mut cmd = Command::cargo_bin("mnemo").unwrap();
+    cmd.env("HOME", dir.path());
+    cmd.arg("--agent-id").arg(agent_id);
+    cmd.arg("bind").arg("I prefer using vim for all my coding");
+    cmd.assert()
+        .success()
+        .stdout(predicates::str::contains("Confirmation required"))
+        .stdout(predicates::str::contains("vim"));
+}
+
+#[test]
 fn test_bind_store_intent() {
     let dir = TempDir::new().unwrap();
     let agent_id = "test-agent-bind-store";

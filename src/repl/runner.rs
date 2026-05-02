@@ -422,8 +422,41 @@ impl Repl {
                 ),
             }
         } else if has_store_intent(&text) {
-            // If no retrieval intent but store intent detected, extract and store
-            self.cmd_extract(text)
+            // If no retrieval intent but store intent detected, check config
+            let store = ConfigStore::new(self.db.conn());
+            let confirmation_needed = store
+                .get("auto_remember_confirmation")
+                .unwrap_or(None)
+                .map(|v| v == "true")
+                .unwrap_or(false);
+
+            if confirmation_needed {
+                // Extract memories but return them for confirmation instead of storing
+                use crate::extract::{extract_memories, OpenAiConfig};
+                let config = OpenAiConfig::from_env();
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                match rt.block_on(extract_memories(&text, config.as_ref())) {
+                    Ok(results) if !results.is_empty() => {
+                        let extracted: Vec<String> = results
+                            .iter()
+                            .map(|r| format!("[{} | {:.2}] {}", r.tier, r.importance, r.content))
+                            .collect();
+                        Response::Ok {
+                            message: format!(
+                                "Confirmation required: The following memories were extracted but NOT stored. Reply with 'remember' to store them, or ignore to discard:\n\n{}",
+                                extracted.join("\n")
+                            ),
+                        }
+                    }
+                    _ => Response::Ok {
+                        message: "Store intent detected but nothing extracted for confirmation."
+                            .to_string(),
+                    },
+                }
+            } else {
+                // Auto-store if confirmation is not required
+                self.cmd_extract(text)
+            }
         } else {
             // No clear intent - store as working memory and return neutral
             let mut manager = TierManager::new(self.db.conn(), 100).unwrap();

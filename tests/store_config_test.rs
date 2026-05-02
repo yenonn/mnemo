@@ -23,7 +23,7 @@ fn test_config_crud() {
 
     // Get all (should include lifecycle defaults)
     let all = store.get_all().unwrap();
-    assert_eq!(all.len(), 6); // 1 user key + 5 lifecycle defaults
+    assert_eq!(all.len(), 7); // 1 user key + 6 lifecycle defaults
 
     // Delete
     store.delete("embedding_provider").unwrap();

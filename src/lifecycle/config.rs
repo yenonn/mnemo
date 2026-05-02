@@ -60,6 +60,7 @@ pub fn seed_defaults(conn: &Connection) -> rusqlite::Result<()> {
         ("lifecycle_idle_threshold", "60"),
         ("lifecycle_decay_rate", "0.1"),
         ("lifecycle_consolidate_on_flush", "true"),
+        ("auto_remember_confirmation", "false"),
     ];
     for (key, value) in defaults {
         // Only insert if not already present
