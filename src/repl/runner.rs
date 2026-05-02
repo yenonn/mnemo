@@ -270,21 +270,22 @@ impl Repl {
     }
 
     fn cmd_extract(&mut self, text: String) -> Response {
-        use crate::extract::{OpenAiConfig, extract_memories, ExtractResult};
+        use crate::extract::{extract_memories, ExtractResult, OpenAiConfig};
         use crate::tier::TierManager;
 
         let config = OpenAiConfig::from_env();
         let rt = tokio::runtime::Runtime::new().unwrap();
 
-        let results: Vec<ExtractResult> = match rt.block_on(extract_memories(&text, config.as_ref())) {
-            Ok(r) => r,
-            Err(e) => {
-                return Response::Error {
-                    code: "EXTRACT_ERROR".to_string(),
-                    message: e.to_string(),
-                };
-            }
-        };
+        let results: Vec<ExtractResult> =
+            match rt.block_on(extract_memories(&text, config.as_ref())) {
+                Ok(r) => r,
+                Err(e) => {
+                    return Response::Error {
+                        code: "EXTRACT_ERROR".to_string(),
+                        message: e.to_string(),
+                    };
+                }
+            };
 
         let mut manager = TierManager::new(self.db.conn(), 100).unwrap();
         let mut stored_ids = Vec::new();
@@ -309,7 +310,11 @@ impl Repl {
         }
 
         Response::Ok {
-            message: format!("Extracted and stored {} memories: {}", stored_ids.len(), stored_ids.join(", ")),
+            message: format!(
+                "Extracted and stored {} memories: {}",
+                stored_ids.len(),
+                stored_ids.join(", ")
+            ),
         }
     }
 
@@ -326,21 +331,26 @@ impl Repl {
     }
 
     fn cmd_bind(&mut self, text: String) -> Response {
-        use crate::context::{analyze_intent, build_query, has_store_intent, expand_query};
+        use crate::context::{analyze_intent, build_query, expand_query, has_store_intent};
 
         // Step 1: Analyze intent - does user want to retrieve or store?
         if let Some(intent) = analyze_intent(&text) {
             let query = build_query(&intent);
             let limit = 20;
-            
+
             // Expand query terms with synonyms before searching
-            let query_terms: Vec<String> = query.split_whitespace().map(|s| s.to_string()).collect();
+            let query_terms: Vec<String> =
+                query.split_whitespace().map(|s| s.to_string()).collect();
             let expanded = expand_query(&query_terms);
-            
+
             // Retrieve relevant memories automatically using expanded terms
             let mut manager = TierManager::new(self.db.conn(), 100).unwrap();
-            let types_to_search = vec!["working".to_string(), "episodic".to_string(), "semantic".to_string()];
-            
+            let types_to_search = vec![
+                "working".to_string(),
+                "episodic".to_string(),
+                "semantic".to_string(),
+            ];
+
             match manager.recall_expanded(&expanded, &types_to_search, limit) {
                 Ok(memories) => {
                     let memory_texts: Vec<String> = memories
@@ -351,15 +361,21 @@ impl Repl {
                     let retrieved = if memory_texts.is_empty() {
                         "No matching memories found.".to_string()
                     } else {
-                        format!("Found {} memories:\n{}", memory_texts.len(), memory_texts.join("\n"))
+                        format!(
+                            "Found {} memories:\n{}",
+                            memory_texts.len(),
+                            memory_texts.join("\n")
+                        )
                     };
 
                     // Also store the conversation turn in working memory
                     let _ = manager.remember_working(&format!("User asked: {}", text));
 
                     Response::Ok {
-                        message: format!("{}\n\nQuery intent: {:?} (confidence: {:.2})", 
-                                         retrieved, intent.intent_type, intent.confidence),
+                        message: format!(
+                            "{}\n\nQuery intent: {:?} (confidence: {:.2})",
+                            retrieved, intent.intent_type, intent.confidence
+                        ),
                     }
                 }
                 Err(e) => Response::Error {
@@ -374,9 +390,11 @@ impl Repl {
             // No clear intent - store as working memory and return neutral
             let mut manager = TierManager::new(self.db.conn(), 100).unwrap();
             let _ = manager.remember_working(&format!("Conversation: {}", text));
-            
+
             Response::Ok {
-                message: "Message stored in working memory. No clear retrieval or store intent detected.".to_string(),
+                message:
+                    "Message stored in working memory. No clear retrieval or store intent detected."
+                        .to_string(),
             }
         }
     }

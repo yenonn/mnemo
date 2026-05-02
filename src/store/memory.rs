@@ -1,5 +1,5 @@
-use rusqlite::{params, Connection, Result as SqliteResult, Row, ToSql};
 use chrono::Utc;
+use rusqlite::{params, Connection, Result as SqliteResult, Row, ToSql};
 
 #[derive(Debug, Clone)]
 pub struct Memory {
@@ -83,7 +83,7 @@ impl<'a> MemoryStore<'a> {
             "SELECT id, memory_type, content, created_at, accessed_at, expires_at,
                     confidence, importance, source_type, source_turn_id,
                     version, superseded_by, is_indexed, tags
-             FROM memories WHERE id = ?"
+             FROM memories WHERE id = ?",
         )?;
 
         let mut rows = stmt.query([id])?;
@@ -105,11 +105,15 @@ impl<'a> MemoryStore<'a> {
                     confidence, importance, source_type, source_turn_id,
                     version, superseded_by, is_indexed, tags
              FROM memories
-             WHERE rowid IN (SELECT rowid FROM memories_fts WHERE content MATCH ?)"
+             WHERE rowid IN (SELECT rowid FROM memories_fts WHERE content MATCH ?)",
         );
 
         if !memory_types.is_empty() {
-            let placeholders = memory_types.iter().map(|_| "?".to_string()).collect::<Vec<_>>().join(",");
+            let placeholders = memory_types
+                .iter()
+                .map(|_| "?".to_string())
+                .collect::<Vec<_>>()
+                .join(",");
             sql.push_str(&format!(" AND memory_type IN ({})", placeholders));
         }
 
@@ -128,7 +132,8 @@ impl<'a> MemoryStore<'a> {
     }
 
     pub fn delete(&self, id: &str) -> SqliteResult<()> {
-        self.conn.execute("DELETE FROM memories WHERE id = ?", [id])?;
+        self.conn
+            .execute("DELETE FROM memories WHERE id = ?", [id])?;
         Ok(())
     }
 

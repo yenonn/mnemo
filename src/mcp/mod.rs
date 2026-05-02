@@ -59,11 +59,7 @@ pub fn handle_request(req: McpRequest, agent_id: &str) -> McpResponse {
         "initialize" => handle_initialize(req),
         "tools/list" => handle_tools_list(req),
         "tools/call" => handle_tools_call(req, agent_id),
-        _ => McpResponse::error(
-            req.id,
-            -32601,
-            format!("Method not found: {}", req.method),
-        ),
+        _ => McpResponse::error(req.id, -32601, format!("Method not found: {}", req.method)),
     }
 }
 
@@ -196,15 +192,9 @@ fn handle_tools_call(req: McpRequest, agent_id: &str) -> McpResponse {
         }
     };
 
-    let name = params
-        .get("name")
-        .and_then(|n| n.as_str())
-        .unwrap_or("");
+    let name = params.get("name").and_then(|n| n.as_str()).unwrap_or("");
 
-    let args = params
-        .get("arguments")
-        .cloned()
-        .unwrap_or(json!({}));
+    let args = params.get("arguments").cloned().unwrap_or(json!({}));
 
     match name {
         "remember" => handle_remember(req.id, args, agent_id),
@@ -213,11 +203,7 @@ fn handle_tools_call(req: McpRequest, agent_id: &str) -> McpResponse {
         "bind" => handle_bind(req.id, args, agent_id),
         "status" => handle_status(req.id, agent_id),
         "forget" => handle_forget(req.id, args, agent_id),
-        _ => McpResponse::error(
-            req.id,
-            -32602,
-            format!("Unknown tool: {}", name),
-        ),
+        _ => McpResponse::error(req.id, -32602, format!("Unknown tool: {}", name)),
     }
 }
 
@@ -240,10 +226,7 @@ fn handle_remember(
     args: serde_json::Value,
     agent_id: &str,
 ) -> McpResponse {
-    let content = args
-        .get("content")
-        .and_then(|c| c.as_str())
-        .unwrap_or("");
+    let content = args.get("content").and_then(|c| c.as_str()).unwrap_or("");
     let memory_type = args
         .get("memory_type")
         .and_then(|m| m.as_str())
@@ -334,7 +317,11 @@ fn handle_recall(
                     let text = if memory_texts.is_empty() {
                         "No memories found.".to_string()
                     } else {
-                        format!("Found {} memories:\n{}", memory_texts.len(), memory_texts.join("\n"))
+                        format!(
+                            "Found {} memories:\n{}",
+                            memory_texts.len(),
+                            memory_texts.join("\n")
+                        )
                     };
 
                     McpResponse::success(
@@ -370,11 +357,7 @@ fn handle_extract(
     let results = match rt.block_on(crate::extract::extract_memories(text, config.as_ref())) {
         Ok(r) => r,
         Err(e) => {
-            return McpResponse::error(
-                id,
-                -32603,
-                format!("Extraction error: {}", e),
-            );
+            return McpResponse::error(id, -32603, format!("Extraction error: {}", e));
         }
     };
 
@@ -396,10 +379,7 @@ fn handle_extract(
                     "working" => manager.remember_working(&result.content),
                     "episodic" => manager.remember_episodic(&result.content, result.importance),
                     "semantic" | _ => {
-                        manager.remember_semantic(&result.content,
-                            result.importance,
-                            &[],
-                        )
+                        manager.remember_semantic(&result.content, result.importance, &[])
                     }
                 };
 
@@ -480,10 +460,15 @@ fn handle_bind(
                     Err(e) => return McpResponse::error(id, -32603, format!("DB error: {}", e)),
                 };
 
-                let types_to_search = vec!["working".to_string(), "episodic".to_string(), "semantic".to_string()];
+                let types_to_search = vec![
+                    "working".to_string(),
+                    "episodic".to_string(),
+                    "semantic".to_string(),
+                ];
 
                 // Expand query terms before searching
-                let query_terms: Vec<String> = query.split_whitespace().map(|s| s.to_string()).collect();
+                let query_terms: Vec<String> =
+                    query.split_whitespace().map(|s| s.to_string()).collect();
                 let expanded = crate::context::expand_query(&query_terms);
 
                 match manager.recall_expanded(&expanded, &types_to_search, 20) {
@@ -496,7 +481,11 @@ fn handle_bind(
                         let retrieved = if memory_texts.is_empty() {
                             "No matching memories found.".to_string()
                         } else {
-                            format!("Found {} memories:\n{}", memory_texts.len(), memory_texts.join("\n"))
+                            format!(
+                                "Found {} memories:\n{}",
+                                memory_texts.len(),
+                                memory_texts.join("\n")
+                            )
                         };
 
                         let _ = manager.remember_working(&format!("User asked: {}", text));
@@ -583,11 +572,7 @@ pub fn serve_stdio(agent_id: &str) {
                         }
                     }
                     Err(e) => {
-                        let resp = McpResponse::error(
-                            None,
-                            -32700,
-                            format!("Parse error: {}", e),
-                        );
+                        let resp = McpResponse::error(None, -32700, format!("Parse error: {}", e));
                         if let Ok(json) = serde_json::to_string(&resp) {
                             let _ = writeln!(stdout_lock, "{}", json);
                             let _ = stdout_lock.flush();

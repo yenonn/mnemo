@@ -15,14 +15,14 @@ fn test_version() {
 fn test_remember_and_recall() {
     let dir = TempDir::new().unwrap();
     let agent_id = "test-agent-integration";
-    
+
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
     cmd.arg("--agent-id").arg(agent_id);
     cmd.arg("remember").arg("User likes blue theme");
     cmd.arg("--memory-type").arg("semantic");
     cmd.assert().success();
-    
+
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
     cmd.arg("--agent-id").arg(agent_id);
@@ -36,13 +36,13 @@ fn test_remember_and_recall() {
 fn test_init_and_status() {
     let dir = TempDir::new().unwrap();
     let agent_id = "test-agent-status";
-    
+
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
     cmd.arg("--agent-id").arg(agent_id);
     cmd.arg("init");
     cmd.assert().success();
-    
+
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
     cmd.arg("--agent-id").arg(agent_id);
@@ -56,7 +56,7 @@ fn test_init_and_status() {
 fn test_repl_mode() {
     let dir = TempDir::new().unwrap();
     let agent_id = "test-agent-repl";
-    
+
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
     cmd.arg("--agent-id").arg(agent_id);
@@ -73,7 +73,7 @@ fn test_repl_mode() {
 fn test_consolidate_working_to_episodic() {
     let dir = TempDir::new().unwrap();
     let agent_id = "test-agent-consolidate";
-    
+
     // Remember a working memory
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
@@ -81,7 +81,7 @@ fn test_consolidate_working_to_episodic() {
     cmd.arg("remember").arg("First conversation");
     cmd.arg("--memory-type").arg("working");
     cmd.assert().success();
-    
+
     // Consolidate to episodic
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
@@ -96,14 +96,14 @@ fn test_consolidate_working_to_episodic() {
 fn test_pragma_get_set() {
     let dir = TempDir::new().unwrap();
     let agent_id = "test-agent-pragma";
-    
+
     // Set pragma
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
     cmd.arg("--agent-id").arg(agent_id);
     cmd.arg("pragma").arg("test_key").arg("test_value");
     cmd.assert().success();
-    
+
     // Get pragma
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
@@ -118,15 +118,16 @@ fn test_pragma_get_set() {
 fn test_bind_retrieve_intent() {
     let dir = TempDir::new().unwrap();
     let agent_id = "test-agent-bind-retrieve";
-    
+
     // Store memory with matching keywords
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
     cmd.arg("--agent-id").arg(agent_id);
-    cmd.arg("remember").arg("User preferences include dark themes for all applications");
+    cmd.arg("remember")
+        .arg("User preferences include dark themes for all applications");
     cmd.arg("--memory-type").arg("semantic");
     cmd.assert().success();
-    
+
     // Use BIND to retrieve using exact matching terms
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());
@@ -142,7 +143,7 @@ fn test_bind_retrieve_intent() {
 fn test_bind_store_intent() {
     let dir = TempDir::new().unwrap();
     let agent_id = "test-agent-bind-store";
-    
+
     // Use BIND with clear store signal
     let mut cmd = Command::cargo_bin("mnemo").unwrap();
     cmd.env("HOME", dir.path());

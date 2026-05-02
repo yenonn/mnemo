@@ -8,23 +8,41 @@
 /// organized loosely by domain.
 static SYNONYM_MAP: &[(&str, &[&str])] = &[
     // Communication / scheduling
-    ("todos",       &["tasks", "task", "todo", "checklist"]),
-    ("meetings",    &["meeting", "calls", "sync", "standup", "review"]),
-    ("yesterday",   &["yesterday", "last night", "previous day"]),
-
+    ("todos", &["tasks", "task", "todo", "checklist"]),
+    (
+        "meetings",
+        &["meeting", "calls", "sync", "standup", "review"],
+    ),
+    ("yesterday", &["yesterday", "last night", "previous day"]),
     // Work context
-    ("work",        &["job", "project", "assignment", "task", "duty"]),
-    ("deadline",    &["due", "due date", "milestone", "timeline", "schedule"]),
-    ("email",       &["mail", "message", "inbox", "correspondence"]),
-
+    ("work", &["job", "project", "assignment", "task", "duty"]),
+    (
+        "deadline",
+        &["due", "due date", "milestone", "timeline", "schedule"],
+    ),
+    ("email", &["mail", "message", "inbox", "correspondence"]),
     // Preferences
-    ("theme",       &["theme", "mode", "style", "appearance", "ui", "skin"]),
-    ("dark mode",   &["dark", "night mode", "dark theme", "night theme"]),
-    ("preference",  &["preference", "like", "dislike", "hate", "love", "want"]),
-
+    (
+        "theme",
+        &["theme", "mode", "style", "appearance", "ui", "skin"],
+    ),
+    (
+        "dark mode",
+        &["dark", "night mode", "dark theme", "night theme"],
+    ),
+    (
+        "preference",
+        &["preference", "like", "dislike", "hate", "love", "want"],
+    ),
     // Tools
-    ("editor",      &["editor", "ide", "vim", "emacs", "vscode", "code"]),
-    ("terminal",    &["terminal", "shell", "command line", "cli", "bash", "zsh"]),
+    (
+        "editor",
+        &["editor", "ide", "vim", "emacs", "vscode", "code"],
+    ),
+    (
+        "terminal",
+        &["terminal", "shell", "command line", "cli", "bash", "zsh"],
+    ),
 ];
 
 fn is_stop_word(term: &str) -> bool {
@@ -58,10 +76,13 @@ fn is_stop_word(term: &str) -> bool {
 
 fn simple_stem(word: &str) -> Option<String> {
     let lower = word.to_lowercase();
-    if let Some(stemmed) = lower
-        .strip_suffix("ies")
-        .and_then(|s| if s.len() > 1 { Some(format!("{}y", s)) } else { None })
-    {
+    if let Some(stemmed) = lower.strip_suffix("ies").and_then(|s| {
+        if s.len() > 1 {
+            Some(format!("{}y", s))
+        } else {
+            None
+        }
+    }) {
         return Some(stemmed);
     }
     if let Some(stemmed) = lower.strip_suffix("ied").and_then(|s| {
@@ -145,7 +166,10 @@ mod tests {
     fn test_expand_query_dedup() {
         let expanded = expand_query(&vec!["todos".to_string(), "tasks".to_string()]);
         let unique_count = expanded.len();
-        let set_count: usize = expanded.iter().collect::<std::collections::HashSet<_>>().len();
+        let set_count: usize = expanded
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+            .len();
         assert_eq!(
             unique_count, set_count,
             "expand_query must not produce duplicates"

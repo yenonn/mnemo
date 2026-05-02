@@ -9,40 +9,73 @@ pub struct QueryIntent {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum IntentType {
-    RetrieveAll,           // "what do I have", "show me all"
-    RetrieveRecent,       // "yesterday", "last time", "recently"
-    RetrieveByTopic,     // "my preferences", "about vim"
-    RetrieveByDate,       // "on Monday", "May 1st"
-    Store,                // "remember that..."
-    Unknown,              // no clear intent
+    RetrieveAll,     // "what do I have", "show me all"
+    RetrieveRecent,  // "yesterday", "last time", "recently"
+    RetrieveByTopic, // "my preferences", "about vim"
+    RetrieveByDate,  // "on Monday", "May 1st"
+    Store,           // "remember that..."
+    Unknown,         // no clear intent
 }
 
 /// Keywords that trigger automatic memory retrieval
 pub const RETRIEVE_KEYWORDS: &[&str] = &[
-    "what", "tell me", "show me", "list", "do I have",
-    "yesterday", "last time", "recently", "before",
-    "about", "regarding", "my", "todos", "tasks",
-    "completion", "completed", "done", "finished",
-    "preferences", "likes", "settings", "config",
-    "remind me", "what was", "what did", "how did",
+    "what",
+    "tell me",
+    "show me",
+    "list",
+    "do I have",
+    "yesterday",
+    "last time",
+    "recently",
+    "before",
+    "about",
+    "regarding",
+    "my",
+    "todos",
+    "tasks",
+    "completion",
+    "completed",
+    "done",
+    "finished",
+    "preferences",
+    "likes",
+    "settings",
+    "config",
+    "remind me",
+    "what was",
+    "what did",
+    "how did",
 ];
 
 pub const TIME_PATTERNS: &[&str] = &[
-    "yesterday", "today", "tomorrow", "last week",
-    "last month", "recently", "before", "earlier",
-    "this morning", "this afternoon", "last night",
-    "monday", "tuesday", "wednesday", "thursday",
-    "friday", "saturday", "sunday",
+    "yesterday",
+    "today",
+    "tomorrow",
+    "last week",
+    "last month",
+    "recently",
+    "before",
+    "earlier",
+    "this morning",
+    "this afternoon",
+    "last night",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
 ];
 
 /// Analyze user message and detect retrieval intent
-/// 
+///
 /// Returns Some(QueryIntent) if the message appears to be asking
 /// about stored memories, None otherwise.
 pub fn analyze_intent(text: &str) -> Option<QueryIntent> {
     let lower = text.to_lowercase();
     let words: Vec<&str> = lower.split_whitespace().collect();
-    
+
     // Score different intent signals
     let mut retrieve_score: f64 = 0.0;
     let mut query_terms = Vec::new();
@@ -86,11 +119,11 @@ pub fn analyze_intent(text: &str) -> Option<QueryIntent> {
     }
 
     // Extract search terms (nouns and topics)
-    let stop_words: &[&str] = &["what", "the", "a", "an", "is", "are", "was", "were",
-                                "do", "does", "did", "have", "has", "had", "be", "been",
-                                "about", "for", "with", "from", "to", "of", "in", "on",
-                                "my", "mine"];
-    
+    let stop_words: &[&str] = &[
+        "what", "the", "a", "an", "is", "are", "was", "were", "do", "does", "did", "have", "has",
+        "had", "be", "been", "about", "for", "with", "from", "to", "of", "in", "on", "my", "mine",
+    ];
+
     for word in &words {
         let clean = word.trim_matches(|c: char| !c.is_alphanumeric());
         if clean.len() > 2 && !stop_words.contains(&clean) {
@@ -134,19 +167,22 @@ pub fn build_query(intent: &QueryIntent) -> String {
 /// Check if a message should trigger extraction (store intent)
 pub fn has_store_intent(text: &str) -> bool {
     let lower = text.to_lowercase();
-    lower.contains("remember") || 
-    lower.contains("note") ||
-    lower.starts_with("i prefer") ||
-    lower.starts_with("i like") ||
-    lower.starts_with("i use") ||
-    (lower.starts_with("i ") && !lower.starts_with("i have") && !lower.starts_with("i did"))
+    lower.contains("remember")
+        || lower.contains("note")
+        || lower.starts_with("i prefer")
+        || lower.starts_with("i like")
+        || lower.starts_with("i use")
+        || (lower.starts_with("i ") && !lower.starts_with("i have") && !lower.starts_with("i did"))
 }
 
 /// Suggest which tier based on content
 pub fn suggest_tier(text: &str) -> String {
     let lower = text.to_lowercase();
-    if lower.contains("yesterday") || lower.contains("today") || 
-       lower.contains("earlier") || lower.contains("just") {
+    if lower.contains("yesterday")
+        || lower.contains("today")
+        || lower.contains("earlier")
+        || lower.contains("just")
+    {
         "episodic".to_string()
     } else {
         "semantic".to_string()
