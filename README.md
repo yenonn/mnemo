@@ -236,12 +236,17 @@ Agent → responds with context
 |----------|---------|---------|
 | `MNEMO_OPENAI_API_KEY` | Enable LLM extraction | none (uses heuristic) |
 | `MNEMO_OPENAI_MODEL` | Model for extraction | `gpt-4o-mini` |
+| `MNEMO_OPENAI_API_KEY` | **OpenAI embeddings** (optional) | none (uses synonym expansion) |
+| `MNEMO_OPENAI_MODEL` | Embedding model for OpenAI | `text-embedding-3-small` |
+| `MNEMO_OLLAMA_ENDPOINT` | **Ollama embedding endpoint** (optional) | `http://localhost:11434/api/embeddings` |
+| `MNEMO_OLLAMA_MODEL` | Ollama embedding model | `nomic-embed-text` |
+| `MNEMO_EMBED_DIMS` | Embedding dimensions | `1536` (OpenAI), `768` (Ollama) |
 | `HOME` | Database location | `~/.mnemo/{agent_id}/memory.db` |
 
 ## Architecture
 
 ```
-mnemo binary (~3-5MB, Rust, static-linked)
+mnemo binary (~5-10MB, Rust, static-linked)
   ├── Text Protocol (stdin/stdout)
   ├── MCP Server (JSON-RPC stdio)
   │   ├── remember
@@ -252,8 +257,12 @@ mnemo binary (~3-5MB, Rust, static-linked)
   ├── Memory Tier Manager
   │   ├── Working Buffer (in-memory ring)
   │   ├── Episodic Store (SQLite + FTS5)
-  │   └── Semantic Store (SQLite + FTS5)
+  │   └── Semantic Store (SQLite + FTS5 + optional HNSW via sqlite-vec)
   ├── Extract Engine (LLM / heuristic)
+  ├── Bind Engine
+  │   ├── Intent detection + general-knowledge filter
+  │   ├── Synonym expansion (todos → tasks → meetings)
+  │   └── Hybrid search: BM25 + cosine (fallback to FTS5 only)
   └── SQLite Storage (single ~/.mnemo/{agent_id}/memory.db file)
 ```
 
@@ -276,8 +285,12 @@ Features:
 - ✅ MCP server mode for agent integration
 - ✅ Memory tier management (working → episodic → semantic)
 - ✅ Consolidation
-- ⏳ Vector embeddings (v0.2)
+- ✅ BIND with implicit intent detection
+- ✅ Synonym-based query expansion (no dependencies)
+- ✅ General knowledge skip ("capital of France" → bypass)
+- ✅ Optional hybrid search: FTS5 + HNSW (requires sqlite-vec + OpenAI/Ollama)
 - ⏳ Lifecycle hooks (v0.3)
+- ⏳ On-device embeddings without external API (v0.4)
 
 See [`docs/2026-05-01-mnemo-agent-memory-database-design.md`](docs/2026-05-01-mnemo-agent-memory-database-design.md) for the full specification.
 
