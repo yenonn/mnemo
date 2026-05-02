@@ -343,7 +343,12 @@ impl Repl {
                 query.split_whitespace().map(|s| s.to_string()).collect();
             let expanded = expand_query(&query_terms);
 
-            // Retrieve relevant memories automatically using expanded terms
+            // Try hybrid search if embedding provider and vec0 are available.
+            // Otherwise, fall back to simple expanded FTS5.
+            let vstore = crate::store::VectorStore::new(self.db.conn());
+            let gateway = crate::embed::EmbeddingGateway::from_env()
+                .unwrap_or_else(crate::embed::EmbeddingGateway::new_default);
+
             let mut manager = TierManager::new(self.db.conn(), 100).unwrap();
             let types_to_search = vec![
                 "working".to_string(),
@@ -351,37 +356,43 @@ impl Repl {
                 "semantic".to_string(),
             ];
 
-            match manager.recall_expanded(&expanded, &types_to_search, limit) {
-                Ok(memories) => {
-                    let memory_texts: Vec<String> = memories
-                        .iter()
-                        .map(|m| format!("[{}] {}", m.memory_type, m.content))
-                        .collect();
+            let memories: Vec<crate::store::Memory> = if vstore.available()
+                && gateway.dimensions() > 0
+            {
+                // Hybrid path: expanded FTS5 + vector merge
+                manager
+                    .recall_hybrid(&query, &expanded, &types_to_search, limit, &vstore, &gateway)
+                    .unwrap_or_default()
+            } else {
+                // Fallback: expanded FTS5 only (Plan A)
+                manager
+                    .recall_expanded(&expanded, &types_to_search, limit)
+                    .unwrap_or_default()
+            };
 
-                    let retrieved = if memory_texts.is_empty() {
-                        "No matching memories found.".to_string()
-                    } else {
-                        format!(
-                            "Found {} memories:\n{}",
-                            memory_texts.len(),
-                            memory_texts.join("\n")
-                        )
-                    };
+            let memory_texts: Vec<String> = memories
+                .iter()
+                .map(|m| format!("[{}] {}", m.memory_type, m.content))
+                .collect();
 
-                    // Also store the conversation turn in working memory
-                    let _ = manager.remember_working(&format!("User asked: {}", text));
+            let retrieved = if memory_texts.is_empty() {
+                "No matching memories found.".to_string()
+            } else {
+                format!(
+                    "Found {} memories:\n{}",
+                    memory_texts.len(),
+                    memory_texts.join("\n")
+                )
+            };
 
-                    Response::Ok {
-                        message: format!(
-                            "{}\n\nQuery intent: {:?} (confidence: {:.2})",
-                            retrieved, intent.intent_type, intent.confidence
-                        ),
-                    }
-                }
-                Err(e) => Response::Error {
-                    code: "DB_ERROR".to_string(),
-                    message: e.to_string(),
-                },
+            // Also store the conversation turn in working memory
+            let _ = manager.remember_working(&format!("User asked: {}", text));
+
+            Response::Ok {
+                message: format!(
+                    "{}\n\nQuery intent: {:?} (confidence: {:.2})",
+                    retrieved, intent.intent_type, intent.confidence
+                ),
             }
         } else if has_store_intent(&text) {
             // If no retrieval intent but store intent detected, extract and store

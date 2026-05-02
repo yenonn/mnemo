@@ -471,39 +471,53 @@ fn handle_bind(
                     query.split_whitespace().map(|s| s.to_string()).collect();
                 let expanded = crate::context::expand_query(&query_terms);
 
-                match manager.recall_expanded(&expanded, &types_to_search, 20) {
-                    Ok(memories) => {
-                        let memory_texts: Vec<String> = memories
-                            .iter()
-                            .map(|m| format!("[{}] {}", m.memory_type, m.content))
-                            .collect();
+                // Hybrid search if vec0 and provider are available, else expanded FTS5
+                let vstore = crate::store::VectorStore::new(db.conn());
+                let gateway = crate::embed::EmbeddingGateway::from_env()
+                    .unwrap_or_else(crate::embed::EmbeddingGateway::new_default);
 
-                        let retrieved = if memory_texts.is_empty() {
-                            "No matching memories found.".to_string()
-                        } else {
-                            format!(
-                                "Found {} memories:\n{}",
-                                memory_texts.len(),
-                                memory_texts.join("\n")
-                            )
-                        };
-
-                        let _ = manager.remember_working(&format!("User asked: {}", text));
-
-                        let response_text = format!(
-                            "{}\n\nQuery intent: {:?} (confidence: {:.2})",
-                            retrieved, intent.intent_type, intent.confidence
-                        );
-
-                        McpResponse::success(
-                            id,
-                            json!({
-                                "content": [{"type": "text", "text": response_text}]
-                            }),
+                let memories: Vec<crate::store::Memory> = if vstore.available()
+                    && gateway.dimensions() > 0
+                {
+                    manager
+                        .recall_hybrid(
+                            &query, &expanded, &types_to_search, 20, &vstore, &gateway,
                         )
-                    }
-                    Err(e) => McpResponse::error(id, -32603, format!("Recall error: {}", e)),
-                }
+                        .unwrap_or_default()
+                } else {
+                    manager
+                        .recall_expanded(&expanded, &types_to_search, 20)
+                        .unwrap_or_default()
+                };
+
+                let memory_texts: Vec<String> = memories
+                    .iter()
+                    .map(|m| format!("[{}] {}", m.memory_type, m.content))
+                    .collect();
+
+                let retrieved = if memory_texts.is_empty() {
+                    "No matching memories found.".to_string()
+                } else {
+                    format!(
+                        "Found {} memories:\n{}",
+                        memory_texts.len(),
+                        memory_texts.join("\n")
+                    )
+                };
+
+                let _ = manager.remember_working(&format!("User asked: {}", text));
+
+                let response_text = format!(
+                    "{}\n\nQuery intent: {:?} (confidence: {:.2})",
+                    retrieved, intent.intent_type, intent.confidence
+                );
+
+                McpResponse::success(
+                    id,
+                    json!({
+                        "content": [{"type": "text", "text": response_text}]
+                    }),
+                )
             } else {
                 McpResponse::success(
                     id,
