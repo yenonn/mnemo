@@ -154,3 +154,42 @@ fn test_bind_store_intent() {
         .stdout(predicates::str::contains("Extracted and stored"))
         .stdout(predicates::str::contains("mem-"));
 }
+
+#[test]
+fn test_bind_finds_related_with_expansion() {
+    let dir = TempDir::new().unwrap();
+    let agent_id = "test-agent-bind-expansion";
+
+    // Seed: "tired after meetings yesterday" — no "todos" keyword
+    let mut cmd = Command::cargo_bin("mnemo").unwrap();
+    cmd.env("HOME", dir.path());
+    cmd.arg("--agent-id").arg(agent_id);
+    cmd.arg("remember")
+        .arg("User mentioned they were tired after meetings yesterday");
+    cmd.arg("--memory-type").arg("episodic");
+    cmd.assert().success();
+
+    // Bind query: "todos" should find "meetings" via synonym expansion
+    let mut cmd = Command::cargo_bin("mnemo").unwrap();
+    cmd.env("HOME", dir.path());
+    cmd.arg("--agent-id").arg(agent_id);
+    cmd.arg("bind").arg("What were my todos from yesterday?");
+    cmd.assert()
+        .success()
+        .stdout(predicates::str::contains("Found"))
+        .stdout(predicates::str::contains("tired after meetings"));
+}
+
+#[test]
+fn test_bind_skips_general_knowledge() {
+    let dir = TempDir::new().unwrap();
+    let agent_id = "test-agent-bind-gk";
+
+    let mut cmd = Command::cargo_bin("mnemo").unwrap();
+    cmd.env("HOME", dir.path());
+    cmd.arg("--agent-id").arg(agent_id);
+    cmd.arg("bind").arg("What is the capital of France?");
+    cmd.assert()
+        .success()
+        .stdout(predicates::str::contains("No matching memories found."));
+}
