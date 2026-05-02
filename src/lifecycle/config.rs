@@ -68,7 +68,11 @@ pub fn seed_defaults(conn: &Connection) -> rusqlite::Result<()> {
             params![key, value],
         )?;
     }
-    let _ = set(conn, "lifecycle_last_activity", &0i64.to_string());
+    // Only seed last_activity if not present — never overwrite an existing value
+    conn.execute(
+        "INSERT OR IGNORE INTO _mnemo_meta (key, value) VALUES ('lifecycle_last_activity', '0')",
+        [],
+    )?;
     Ok(())
 }
 
