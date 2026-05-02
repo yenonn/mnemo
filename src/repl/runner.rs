@@ -326,18 +326,22 @@ impl Repl {
     }
 
     fn cmd_bind(&mut self, text: String) -> Response {
-        use crate::context::{analyze_intent, build_query, has_store_intent};
+        use crate::context::{analyze_intent, build_query, has_store_intent, expand_query};
 
         // Step 1: Analyze intent - does user want to retrieve or store?
         if let Some(intent) = analyze_intent(&text) {
             let query = build_query(&intent);
             let limit = 20;
             
-            // Retrieve relevant memories automatically
+            // Expand query terms with synonyms before searching
+            let query_terms: Vec<String> = query.split_whitespace().map(|s| s.to_string()).collect();
+            let expanded = expand_query(&query_terms);
+            
+            // Retrieve relevant memories automatically using expanded terms
             let mut manager = TierManager::new(self.db.conn(), 100).unwrap();
             let types_to_search = vec!["working".to_string(), "episodic".to_string(), "semantic".to_string()];
             
-            match manager.recall(&query, &types_to_search, limit) {
+            match manager.recall_expanded(&expanded, &types_to_search, limit) {
                 Ok(memories) => {
                     let memory_texts: Vec<String> = memories
                         .iter()

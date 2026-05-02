@@ -482,7 +482,11 @@ fn handle_bind(
 
                 let types_to_search = vec!["working".to_string(), "episodic".to_string(), "semantic".to_string()];
 
-                match manager.recall(&query, &types_to_search, 20) {
+                // Expand query terms before searching
+                let query_terms: Vec<String> = query.split_whitespace().map(|s| s.to_string()).collect();
+                let expanded = crate::context::expand_query(&query_terms);
+
+                match manager.recall_expanded(&expanded, &types_to_search, 20) {
                     Ok(memories) => {
                         let memory_texts: Vec<String> = memories
                             .iter()
