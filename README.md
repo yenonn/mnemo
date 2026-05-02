@@ -234,14 +234,33 @@ Agent → responds with context
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `MNEMO_OPENAI_API_KEY` | Enable LLM extraction | none (uses heuristic) |
-| `MNEMO_OPENAI_MODEL` | Model for extraction | `gpt-4o-mini` |
-| `MNEMO_OPENAI_API_KEY` | **OpenAI embeddings** (optional) | none (uses synonym expansion) |
-| `MNEMO_OPENAI_MODEL` | Embedding model for OpenAI | `text-embedding-3-small` |
+| `MNEMO_OPENAI_API_KEY` | Enable LLM extraction + OpenAI embeddings | none (uses heuristic) |
+| `MNEMO_OPENAI_MODEL` | LLM model for extraction | `gpt-4o-mini` |
 | `MNEMO_OLLAMA_ENDPOINT` | **Ollama embedding endpoint** (optional) | `http://localhost:11434/api/embeddings` |
 | `MNEMO_OLLAMA_MODEL` | Ollama embedding model | `nomic-embed-text` |
 | `MNEMO_EMBED_DIMS` | Embedding dimensions | `1536` (OpenAI), `768` (Ollama) |
+| `MNEMO_EMBED_DIMS` | Embedding dimensions | `1536` (OpenAI), `768` (Ollama) |
 | `HOME` | Database location | `~/.mnemo/{agent_id}/memory.db` |
+
+### Build Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| (none) | FTS5 text search with synonym expansion | Enabled |
+| `--features vec` | Compile HNSW vector search (requires sqlite-vec) | Disabled |
+
+With `--features vec`:
+- `mnemo bind` uses hybrid BM25+cosine search when OpenAI/Ollama is configured
+- Falls back to FTS5-only when sqlite-vec is not installed on the host
+- No runtime performance impact when unused
+
+```bash
+# Minimal build: Plan A (synonym expansion only)
+cargo build --release
+
+# Extended build: Plan A + Plan B (HNSW hybrid)
+cargo build --release --features vec
+```
 
 ## Architecture
 
