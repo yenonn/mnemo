@@ -67,6 +67,18 @@ impl Repl {
     pub fn execute(&mut self, cmd: Command) -> Response {
         use Command::*;
 
+        // Run lifecycle hooks before every command
+        let hook_results = if let Ok(mut manager) = TierManager::new(self.db.conn(), 100) {
+            crate::lifecycle::LifecycleEngine::check_and_fire(self.db.conn(), &mut manager)
+        } else {
+            Vec::new()
+        };
+
+        // Print lifecycle messages
+        for hook in &hook_results {
+            println!("<lifecycle>\n  {}\n</lifecycle>", hook);
+        }
+
         match cmd {
             Init => self.cmd_init(),
             Remember {
