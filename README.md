@@ -80,13 +80,19 @@ mnemo status
 # --- NEW: Implicit Context Retrieval (BIND) ---
 
 # Agent processes user message WITHOUT explicit tool calls:
+# Introspectively detects if the query is about personal context
 # "What were my todos yesterday?" → auto-detects retrieval intent
+# Searches with expanded synonyms (e.g., "todos" also matches "tasks")
 mnemo bind "What were my todos yesterday?"
 # → Retrieved 3 episodic memories automatically
 
 # "I prefer dark mode" → auto-detects store intent  
 mnemo bind "I prefer dark mode"
 # → Extracted and stored 1 memory automatically
+
+# "What is capital of France?" → general knowledge, NO memory search
+mnemo bind "What is capital of France?"
+# → Skips memory, returns immediately (fast)
 ```
 
 ## Installation
@@ -162,7 +168,22 @@ mnemo> quit
 mnemo consolidate working episodic
 ```
 
-### 7. Delete a Memory
+### 7. Implicit Context Retrieval (BIND)
+```bash
+# Auto-detect intent: retrieve, store, or skip
+mnemo bind "What were my todos from yesterday?"
+# → Found 2 memories (via synonym expansion: todos→tasks→meetings)
+
+# Store intent detected → auto-extract and store
+mnemo bind "I prefer vim over emacs"
+# → Extracted and stored 1 semantic memory
+
+# General knowledge → skipped, no DB lookup
+mnemo bind "What is the capital of France?"
+# → No personal context detected
+```
+
+### 8. Delete a Memory
 ```bash
 mnemo forget mem-abc123
 ```
@@ -183,6 +204,7 @@ mnemo --mcp --agent-id my-agent
 | `remember` | Store a memory explicitly | `{"content":"User likes dark mode","memory_type":"semantic"}` |
 | `recall` | Search memories | `{"query":"dark mode","limit":5}` |
 | `extract` | Auto-extract from natural language | `{"text":"I prefer dark mode"}` |
+| `bind` | Process natural language with auto-detected intent | `{"text":"What were my todos yesterday?"}` |
 | `status` | Show memory counts | `{}` |
 | `forget` | Delete by ID | `{"id":"mem-abc123"}` |
 
