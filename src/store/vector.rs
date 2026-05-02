@@ -7,7 +7,6 @@
 //! created and all `VectorStore` operations are no-ops.
 
 use rusqlite::{Connection, Result as SqliteResult};
-use std::collections::HashSet;
 
 /// Encapsulates sqlite-vec `memory_vectors` CRUD and KNN search.
 ///

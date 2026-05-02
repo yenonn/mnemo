@@ -472,23 +472,29 @@ fn handle_bind(
                 let expanded = crate::context::expand_query(&query_terms);
 
                 // Hybrid search if vec0 and provider are available, else expanded FTS5
-                let vstore = crate::store::VectorStore::new(db.conn());
-                let gateway = crate::embed::EmbeddingGateway::from_env()
-                    .unwrap_or_else(crate::embed::EmbeddingGateway::new_default);
+                #[cfg(feature = "vec")]
+                let memories: Vec<crate::store::Memory> = {
+                    let vstore = crate::store::VectorStore::new(db.conn());
+                    let gateway = crate::embed::EmbeddingGateway::from_env()
+                        .unwrap_or_else(crate::embed::EmbeddingGateway::new_default);
 
-                let memories: Vec<crate::store::Memory> = if vstore.available()
-                    && gateway.dimensions() > 0
-                {
-                    manager
-                        .recall_hybrid(
-                            &query, &expanded, &types_to_search, 20, &vstore, &gateway,
-                        )
-                        .unwrap_or_default()
-                } else {
-                    manager
-                        .recall_expanded(&expanded, &types_to_search, 20)
-                        .unwrap_or_default()
+                    if vstore.available() && gateway.dimensions() > 0 {
+                        manager
+                            .recall_hybrid(
+                                &query, &expanded, &types_to_search, 20, &vstore, &gateway,
+                            )
+                            .unwrap_or_default()
+                    } else {
+                        manager
+                            .recall_expanded(&expanded, &types_to_search, 20)
+                            .unwrap_or_default()
+                    }
                 };
+
+                #[cfg(not(feature = "vec"))]
+                let memories: Vec<crate::store::Memory> = manager
+                    .recall_expanded(&expanded, &types_to_search, 20)
+                    .unwrap_or_default();
 
                 let memory_texts: Vec<String> = memories
                     .iter()

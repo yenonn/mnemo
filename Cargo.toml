@@ -15,6 +15,10 @@ path = "src/lib.rs"
 name = "mnemo"
 path = "src/main.rs"
 
+[features]
+default = []
+vec = []
+
 [dependencies]
 # SQLite (bundled so no system dependency)
 rusqlite = { version = "0.31", features = ["bundled", "load_extension", "chrono"] }

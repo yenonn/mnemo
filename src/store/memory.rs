@@ -151,6 +151,7 @@ impl<'a> MemoryStore<'a> {
         self.search_content(&fts_query, memory_types, limit)
     }
 
+    #[cfg(feature = "vec")]
     /// Search memories using both FTS5 (expanded) and vector (HNSW) together.
     ///
     /// When sqlite-vec is available and an embedding provider is configured,

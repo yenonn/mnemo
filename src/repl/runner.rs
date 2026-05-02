@@ -345,10 +345,6 @@ impl Repl {
 
             // Try hybrid search if embedding provider and vec0 are available.
             // Otherwise, fall back to simple expanded FTS5.
-            let vstore = crate::store::VectorStore::new(self.db.conn());
-            let gateway = crate::embed::EmbeddingGateway::from_env()
-                .unwrap_or_else(crate::embed::EmbeddingGateway::new_default);
-
             let mut manager = TierManager::new(self.db.conn(), 100).unwrap();
             let types_to_search = vec![
                 "working".to_string(),
@@ -356,19 +352,29 @@ impl Repl {
                 "semantic".to_string(),
             ];
 
-            let memories: Vec<crate::store::Memory> = if vstore.available()
-                && gateway.dimensions() > 0
-            {
-                // Hybrid path: expanded FTS5 + vector merge
-                manager
-                    .recall_hybrid(&query, &expanded, &types_to_search, limit, &vstore, &gateway)
-                    .unwrap_or_default()
-            } else {
-                // Fallback: expanded FTS5 only (Plan A)
-                manager
-                    .recall_expanded(&expanded, &types_to_search, limit)
-                    .unwrap_or_default()
+            #[cfg(feature = "vec")]
+            let memories: Vec<crate::store::Memory> = {
+                let vstore = crate::store::VectorStore::new(self.db.conn());
+                let gateway = crate::embed::EmbeddingGateway::from_env()
+                    .unwrap_or_else(crate::embed::EmbeddingGateway::new_default);
+
+                if vstore.available() && gateway.dimensions() > 0 {
+                    manager
+                        .recall_hybrid(
+                            &query, &expanded, &types_to_search, limit, &vstore, &gateway,
+                        )
+                        .unwrap_or_default()
+                } else {
+                    manager
+                        .recall_expanded(&expanded, &types_to_search, limit)
+                        .unwrap_or_default()
+                }
             };
+
+            #[cfg(not(feature = "vec"))]
+            let memories: Vec<crate::store::Memory> = manager
+                .recall_expanded(&expanded, &types_to_search, limit)
+                .unwrap_or_default();
 
             let memory_texts: Vec<String> = memories
                 .iter()

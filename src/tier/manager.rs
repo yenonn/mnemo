@@ -71,6 +71,7 @@ impl<'a> TierManager<'a> {
             .search_content_expanded(expanded_terms, memory_types, limit)
     }
 
+    #[cfg(feature = "vec")]
     pub fn recall_hybrid(
         &self,
         query_text: &str,
