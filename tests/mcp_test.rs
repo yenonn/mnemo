@@ -1,5 +1,9 @@
 use mnemo::mcp::{handle_request, McpRequest};
 use std::env;
+use std::sync::Mutex;
+
+// Global lock to prevent parallel HOME env mutation causing flakiness
+static HOME_LOCK: Mutex<()> = Mutex::new(());
 
 #[test]
 fn test_mcp_initialize() {
@@ -50,6 +54,7 @@ fn test_mcp_tools_list() {
 
 #[test]
 fn test_mcp_remember_tool() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let _tmp = tempfile::tempdir().unwrap();
     env::set_var("HOME", _tmp.path());
 
@@ -76,6 +81,7 @@ fn test_mcp_remember_tool() {
 
 #[test]
 fn test_mcp_recall_tool() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let _tmp = tempfile::tempdir().unwrap();
     env::set_var("HOME", _tmp.path());
 
@@ -117,8 +123,10 @@ fn test_mcp_recall_tool() {
 
 #[test]
 fn test_mcp_extract_tool() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let _tmp = tempfile::tempdir().unwrap();
     env::set_var("HOME", _tmp.path());
+    env::set_var("MNEMO_OPENAI_API_KEY", "");
 
     let resp = handle_request(
         McpRequest {
@@ -142,6 +150,7 @@ fn test_mcp_extract_tool() {
 
 #[test]
 fn test_mcp_forget_tool() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let _tmp = tempfile::tempdir().unwrap();
     env::set_var("HOME", _tmp.path());
 
@@ -194,6 +203,7 @@ fn test_mcp_forget_tool() {
 
 #[test]
 fn test_mcp_status_tool() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let _tmp = tempfile::tempdir().unwrap();
     env::set_var("HOME", _tmp.path());
 
@@ -239,6 +249,7 @@ fn test_mcp_unknown_method() {
 
 #[test]
 fn test_mcp_unknown_tool() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let _tmp = tempfile::tempdir().unwrap();
     env::set_var("HOME", _tmp.path());
 
@@ -261,6 +272,7 @@ fn test_mcp_unknown_tool() {
 
 #[test]
 fn test_mcp_remember_empty_content() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let _tmp = tempfile::tempdir().unwrap();
     env::set_var("HOME", _tmp.path());
 
@@ -287,8 +299,10 @@ fn test_mcp_remember_empty_content() {
 
 #[test]
 fn test_mcp_extract_empty_text() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let _tmp = tempfile::tempdir().unwrap();
     env::set_var("HOME", _tmp.path());
+    env::set_var("MNEMO_OPENAI_API_KEY", "");
 
     let resp = handle_request(
         McpRequest {
@@ -308,4 +322,57 @@ fn test_mcp_extract_empty_text() {
     let err = resp.error.unwrap();
     assert_eq!(err.code, -32602);
     assert!(err.message.contains("Missing text"));
+}
+
+// Test for Bug 2 — MCP tool calls should accept per-request agent_id override
+#[test]
+fn test_mcp_recall_with_per_request_agent_id() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _tmp = tempfile::tempdir().unwrap();
+    env::set_var("HOME", _tmp.path());
+
+    // Store a memory for agent "agent-a"
+    let _ = handle_request(
+        McpRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(serde_json::Value::Number(1.into())),
+            method: "tools/call".to_string(),
+            params: Some(serde_json::json!({
+                "name": "remember",
+                "arguments": {
+                    "content": "User prefers dark mode",
+                    "memory_type": "semantic"
+                }
+            })),
+        },
+        "agent-a",
+    );
+
+    // Now recall using startup agent_id = "default", but with per-request
+    // arguments.agent_id = "agent-a". Without the fix this reads from the empty
+    // default DB and returns nothing.
+    let resp = handle_request(
+        McpRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(serde_json::Value::Number(2.into())),
+            method: "tools/call".to_string(),
+            params: Some(serde_json::json!({
+                "name": "recall",
+                "arguments": {
+                    "query": "dark mode",
+                    "agent_id": "agent-a"
+                }
+            })),
+        },
+        "default",
+    );
+    assert!(resp.error.is_none(), "Should not error: {:?}", resp.error);
+    let result = resp.result.unwrap();
+    let content = result.get("content").unwrap().as_array().unwrap();
+    let text = content[0].get("text").unwrap().as_str().unwrap();
+    assert!(
+        text.contains("dark mode"),
+        "Expected to recall 'dark mode' from agent-a via per-request agent_id, but got: {}",
+        text
+    );
 }

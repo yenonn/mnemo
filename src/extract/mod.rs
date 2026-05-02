@@ -121,6 +121,9 @@ pub struct OpenAiConfig {
 impl OpenAiConfig {
     pub fn from_env() -> Option<Self> {
         let api_key = std::env::var("MNEMO_OPENAI_API_KEY").ok()?;
+        if api_key.trim().is_empty() {
+            return None;
+        }
         let model =
             std::env::var("MNEMO_OPENAI_MODEL").unwrap_or_else(|_| "gpt-4o-mini".to_string());
         let base_url = std::env::var("MNEMO_OPENAI_BASE_URL")

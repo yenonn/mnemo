@@ -196,13 +196,20 @@ fn handle_tools_call(req: McpRequest, agent_id: &str) -> McpResponse {
 
     let args = params.get("arguments").cloned().unwrap_or(json!({}));
 
+    // Allow per-request agent_id override so multiple agents can share one MCP session.
+    let effective_agent_id: String = args
+        .get("agent_id")
+        .and_then(|a| a.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| agent_id.to_string());
+
     match name {
-        "remember" => handle_remember(req.id, args, agent_id),
-        "recall" => handle_recall(req.id, args, agent_id),
-        "extract" => handle_extract(req.id, args, agent_id),
-        "bind" => handle_bind(req.id, args, agent_id),
-        "status" => handle_status(req.id, agent_id),
-        "forget" => handle_forget(req.id, args, agent_id),
+        "remember" => handle_remember(req.id, args, &effective_agent_id),
+        "recall" => handle_recall(req.id, args, &effective_agent_id),
+        "extract" => handle_extract(req.id, args, &effective_agent_id),
+        "bind" => handle_bind(req.id, args, &effective_agent_id),
+        "status" => handle_status(req.id, &effective_agent_id),
+        "forget" => handle_forget(req.id, args, &effective_agent_id),
         _ => McpResponse::error(req.id, -32602, format!("Unknown tool: {}", name)),
     }
 }

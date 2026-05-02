@@ -54,7 +54,7 @@ impl LifecycleEngine {
         }
 
         // 2. Idle session boundary
-        if idle_seconds >= idle_threshold && last_activity > 0 {
+        if idle_seconds >= idle_threshold {
             let mut consolidated_count = 0;
             let mut new_episodic_id: Option<String> = None;
 
@@ -177,5 +177,55 @@ mod tests {
             .iter()
             .any(|r| matches!(r, HookResult::SessionEnd { .. }));
         assert!(has_session_end, "Should fire SessionEnd when idle");
+    }
+
+    // NEW: failing test for Bug 1 — session-start should fire even when last_activity == 0
+    #[test]
+    fn test_check_and_fire_session_start_on_first_run() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            r#"
+            CREATE TABLE memories (
+                id TEXT PRIMARY KEY,
+                memory_type TEXT,
+                content TEXT,
+                created_at INTEGER,
+                confidence REAL DEFAULT 1.0,
+                importance REAL DEFAULT 0.5,
+                source_type TEXT,
+                tags TEXT,
+                accessed_at INTEGER,
+                expires_at INTEGER,
+                version INTEGER DEFAULT 1,
+                superseded_by TEXT,
+                is_indexed INTEGER DEFAULT 0
+            );
+            CREATE TABLE _mnemo_meta (key TEXT PRIMARY KEY, value TEXT);
+        "#,
+        )
+        .unwrap();
+        crate::lifecycle::config::seed_defaults(&conn).unwrap();
+
+        // Insert a semantic memory so auto_recall has something to bring back
+        let store = MemoryStore::new(&conn);
+        store
+            .insert("semantic", "User prefers dark mode", 0.8, "test", &[])
+            .unwrap();
+
+        // last_activity is seeded as "0" by seed_defaults — simulating first run
+        let last_activity = crate::lifecycle::config::get_i64(&conn, "lifecycle_last_activity", -1)
+            .unwrap();
+        assert_eq!(last_activity, 0, "Precondition: last_activity should be 0");
+
+        let mut manager = TierManager::new(&conn, 100).unwrap();
+        let results = LifecycleEngine::check_and_fire(&conn, &mut manager);
+
+        let has_session_start = results
+            .iter()
+            .any(|r| matches!(r, HookResult::SessionStart { .. }));
+        assert!(
+            has_session_start,
+            "Should fire SessionStart on first run even when last_activity is 0"
+        );
     }
 }
