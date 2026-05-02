@@ -188,6 +188,23 @@ mnemo bind "What is the capital of France?"
 mnemo forget mem-abc123
 ```
 
+### 9. Lifecycle Hooks (Automatic Memory Management)
+
+mnemo v0.3 automatically manages your memory tiers without explicit commands:
+
+- **Session boundaries**: After 60 seconds of idle time, working memories are consolidated into episodic.
+- **Decay**: Episodic memories gradually lose confidence over time so stale data surfaces less often.
+- **Context recall**: On session start, relevant semantic + episodic context is loaded into your working buffer.
+- **Overflow**: When working buffer hits 80% capacity, auto-consolidation triggers.
+
+All hooks are configurable via `pragma`:
+
+```bash
+mnemo pragma lifecycle_enabled true        # master switch (default: true)
+mnemo pragma lifecycle_idle_threshold 120  # seconds (default: 60)
+mnemo pragma lifecycle_decay_rate 0.1      # per day (default: 0.1)
+```
+
 ## MCP Server Mode (For OpenCode / Claude Code)
 
 Mnemo supports the **Model Context Protocol** — agents can call memory operations as tools via JSON-RPC.
@@ -308,7 +325,7 @@ Features:
 - ✅ Synonym-based query expansion (no dependencies)
 - ✅ General knowledge skip ("capital of France" → bypass)
 - ✅ Optional hybrid search: FTS5 + HNSW (requires sqlite-vec + OpenAI/Ollama)
-- ⏳ Lifecycle hooks (v0.3)
+- ✅ Lifecycle hooks (v0.3)
 - ⏳ On-device embeddings without external API (v0.4)
 
 See [`docs/2026-05-01-mnemo-agent-memory-database-design.md`](docs/2026-05-01-mnemo-agent-memory-database-design.md) for the full specification.
