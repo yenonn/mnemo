@@ -131,4 +131,23 @@ impl<'a> MemoryStore<'a> {
         self.conn.execute("DELETE FROM memories WHERE id = ?", [id])?;
         Ok(())
     }
+
+    /// Search memories using an expanded query with OR-joined synonyms.
+    ///
+    /// Each term in `expanded_terms` is joined with `OR` so a match on
+    /// any synonym returns the memory, casting a wider net than exact
+    /// lexical match alone.
+    pub fn search_content_expanded(
+        &self,
+        expanded_terms: &[String],
+        memory_types: &[String],
+        limit: usize,
+    ) -> SqliteResult<Vec<Memory>> {
+        if expanded_terms.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let fts_query = expanded_terms.join(" OR ");
+        self.search_content(&fts_query, memory_types, limit)
+    }
 }
