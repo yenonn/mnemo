@@ -1,4 +1,6 @@
-use super::provider::{EmbeddingProvider, EmbedError, OpenAiEmbeddingProvider, OllamaEmbeddingProvider, StubProvider};
+use super::provider::{
+    EmbedError, EmbeddingProvider, OllamaEmbeddingProvider, OpenAiEmbeddingProvider, StubProvider,
+};
 
 pub struct EmbeddingGateway {
     provider: Box<dyn EmbeddingProvider>,

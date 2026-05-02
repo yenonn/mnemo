@@ -377,7 +377,12 @@ impl Repl {
                 if vstore.available() && gateway.dimensions() > 0 {
                     manager
                         .recall_hybrid(
-                            &query, &expanded, &types_to_search, limit, &vstore, &gateway,
+                            &query,
+                            &expanded,
+                            &types_to_search,
+                            limit,
+                            &vstore,
+                            &gateway,
                         )
                         .unwrap_or_default()
                 } else {

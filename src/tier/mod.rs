@@ -1,5 +1,5 @@
-pub mod working;
 pub mod manager;
+pub mod working;
 
-pub use working::{WorkingBuffer, WorkingEntry};
 pub use manager::TierManager;
+pub use working::{WorkingBuffer, WorkingEntry};

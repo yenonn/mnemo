@@ -17,7 +17,9 @@ impl Error for ParseError {}
 pub fn parse_command(input: &str) -> Result<Command, Box<dyn Error>> {
     let trimmed = input.trim().trim_end_matches(';').trim();
     if trimmed.is_empty() {
-        return Err(Box::new(ParseError { message: "Empty command".to_string() }));
+        return Err(Box::new(ParseError {
+            message: "Empty command".to_string(),
+        }));
     }
 
     let tokens = tokenize(trimmed)?;
@@ -34,7 +36,9 @@ pub fn parse_command(input: &str) -> Result<Command, Box<dyn Error>> {
         "EXTRACT" => parse_extract(&tokens),
         "PRAGMA" => parse_pragma(&tokens),
         "BIND" => parse_bind(&tokens),
-        _ => Err(Box::new(ParseError { message: format!("Unknown command: {}", verb) })),
+        _ => Err(Box::new(ParseError {
+            message: format!("Unknown command: {}", verb),
+        })),
     }
 }
 
@@ -58,7 +62,9 @@ fn tokenize(input: &str) -> Result<Vec<String>, Box<dyn Error>> {
     }
 
     if in_quotes {
-        return Err(Box::new(ParseError { message: "Unclosed quote".to_string() }));
+        return Err(Box::new(ParseError {
+            message: "Unclosed quote".to_string(),
+        }));
     }
 
     if !current.is_empty() {
@@ -77,7 +83,11 @@ fn parse_remember(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
         vec![]
     };
 
-    Ok(Command::Remember { content, memory_type, metadata })
+    Ok(Command::Remember {
+        content,
+        memory_type,
+        metadata,
+    })
 }
 
 fn parse_recall(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
@@ -93,7 +103,12 @@ fn parse_recall(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
         10
     };
 
-    Ok(Command::Recall { query, memory_types, conditions: vec![], limit })
+    Ok(Command::Recall {
+        query,
+        memory_types,
+        conditions: vec![],
+        limit,
+    })
 }
 
 fn parse_forget(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
@@ -101,7 +116,10 @@ fn parse_forget(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
         && tokens.get(3).map(|s| s.as_str()) == Some(")")
     {
         let id = tokens.get(2).unwrap_or(&"".to_string()).to_string();
-        return Ok(Command::Forget { id: Some(id), conditions: vec![] });
+        return Ok(Command::Forget {
+            id: Some(id),
+            conditions: vec![],
+        });
     }
     Err(Box::new(ParseError {
         message: "FORGET parsing not fully implemented".to_string(),
@@ -112,7 +130,11 @@ fn parse_consolidate(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
     if tokens.len() >= 4 && tokens.get(2).map(|s| s.as_str()) == Some("TO") {
         let from = tokens.get(1).unwrap_or(&"".to_string()).to_string();
         let to = tokens.get(3).unwrap_or(&"".to_string()).to_string();
-        return Ok(Command::Consolidate { from, to, conditions: vec![] });
+        return Ok(Command::Consolidate {
+            from,
+            to,
+            conditions: vec![],
+        });
     }
     Err(Box::new(ParseError {
         message: "CONSOLIDATE parsing not fully implemented".to_string(),
@@ -134,7 +156,10 @@ fn parse_reflect(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
 
 fn parse_pragma(tokens: &[String]) -> Result<Command, Box<dyn Error>> {
     if tokens.len() == 1 {
-        return Ok(Command::Pragma { key: None, value: None });
+        return Ok(Command::Pragma {
+            key: None,
+            value: None,
+        });
     } else if tokens.get(2).map(|s| s.as_str()) == Some("=") {
         let key = tokens.get(1).unwrap_or(&"".to_string()).to_string();
         let value = tokens.get(3).unwrap_or(&"".to_string()).to_string();

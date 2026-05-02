@@ -84,9 +84,12 @@ mod tests {
     #[test]
     fn test_get_bool_missing_returns_default() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute_batch(r#"
+        conn.execute_batch(
+            r#"
             CREATE TABLE _mnemo_meta (key TEXT PRIMARY KEY, value TEXT);
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let val = get_bool(&conn, "missing", true).unwrap();
         assert!(val);
     }
@@ -94,9 +97,12 @@ mod tests {
     #[test]
     fn test_get_i64_missing_returns_default() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute_batch(r#"
+        conn.execute_batch(
+            r#"
             CREATE TABLE _mnemo_meta (key TEXT PRIMARY KEY, value TEXT);
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let val = get_i64(&conn, "missing", 60).unwrap();
         assert_eq!(val, 60);
     }
@@ -104,9 +110,12 @@ mod tests {
     #[test]
     fn test_get_f64_missing_returns_default() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute_batch(r#"
+        conn.execute_batch(
+            r#"
             CREATE TABLE _mnemo_meta (key TEXT PRIMARY KEY, value TEXT);
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let val = get_f64(&conn, "missing", 0.1).unwrap();
         assert!((val - 0.1).abs() < f64::EPSILON);
     }
@@ -114,9 +123,12 @@ mod tests {
     #[test]
     fn test_seed_defaults_inserts_all() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute_batch(r#"
+        conn.execute_batch(
+            r#"
             CREATE TABLE _mnemo_meta (key TEXT PRIMARY KEY, value TEXT);
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         seed_defaults(&conn).unwrap();
 
         assert!(get_bool(&conn, "lifecycle_enabled", false).unwrap());
@@ -129,9 +141,12 @@ mod tests {
     #[test]
     fn test_seed_defaults_does_not_overwrite() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute_batch(r#"
+        conn.execute_batch(
+            r#"
             CREATE TABLE _mnemo_meta (key TEXT PRIMARY KEY, value TEXT);
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         set(&conn, "lifecycle_enabled", "false").unwrap();
         seed_defaults(&conn).unwrap();
         assert!(!get_bool(&conn, "lifecycle_enabled", true).unwrap());

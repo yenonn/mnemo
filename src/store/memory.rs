@@ -171,18 +171,15 @@ impl<'a> MemoryStore<'a> {
         use std::collections::HashMap;
 
         // 1. FTS5 search
-        let fts_results =
-            self.search_content_expanded(expanded_terms, memory_types, limit * 2)?;
+        let fts_results = self.search_content_expanded(expanded_terms, memory_types, limit * 2)?;
 
         // 2. Vector search (if available)
         let vec_results: Vec<(String, f64)> = if vstore.available() {
             match gateway.embed(query_text) {
-                Ok(vec) => {
-                    match vstore.search(&vec, limit * 2) {
-                        Ok(rows) => rows,
-                        Err(_) => Vec::new(),
-                    }
-                }
+                Ok(vec) => match vstore.search(&vec, limit * 2) {
+                    Ok(rows) => rows,
+                    Err(_) => Vec::new(),
+                },
                 Err(_) => Vec::new(),
             }
         } else {
@@ -235,8 +232,7 @@ impl<'a> MemoryStore<'a> {
 
         // 4. Rank descending, trim to limit, hydrate full rows
         let mut ranked: Vec<(String, f64)> = score_map.into_iter().collect();
-        ranked
-            .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
         let mut output = Vec::with_capacity(limit.min(ranked.len()));
         for (id, _) in ranked.iter().take(limit) {

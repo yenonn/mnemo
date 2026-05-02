@@ -1,27 +1,18 @@
-use mnemo::extract::{ExtractResult, classify_tier, parse_extraction_json};
+use mnemo::extract::{classify_tier, parse_extraction_json, ExtractResult};
 
 #[test]
 fn test_classify_tier_episodic_event() {
-    assert_eq!(
-        classify_tier("User had a bad day at work"),
-        "episodic"
-    );
+    assert_eq!(classify_tier("User had a bad day at work"), "episodic");
 }
 
 #[test]
 fn test_classify_tier_semantic_fact() {
-    assert_eq!(
-        classify_tier("User prefers dark mode"),
-        "semantic"
-    );
+    assert_eq!(classify_tier("User prefers dark mode"), "semantic");
 }
 
 #[test]
 fn test_classify_tier_preference() {
-    assert_eq!(
-        classify_tier("I love using vim"),
-        "semantic"
-    );
+    assert_eq!(classify_tier("I love using vim"), "semantic");
 }
 
 #[test]

@@ -2,7 +2,9 @@ use mnemo::protocol::response::Response;
 
 #[test]
 fn test_ok_response() {
-    let resp = Response::Ok { message: "Database initialized".to_string() };
+    let resp = Response::Ok {
+        message: "Database initialized".to_string(),
+    };
     assert_eq!(format!("{}", resp), "<ok>\n  Database initialized\n</ok>\n");
 }
 
@@ -34,15 +36,23 @@ fn test_memory_response_no_score_no_status() {
         status: None,
     };
     let out = format!("{}", resp);
-    assert!(out.contains("<memory id=\"mem-xyz789\" type=\"episodic\" confidence=\"0.5\" importance=\"0.3\">"));
+    assert!(out.contains(
+        "<memory id=\"mem-xyz789\" type=\"episodic\" confidence=\"0.5\" importance=\"0.3\">"
+    ));
     assert!(!out.contains("score="));
     assert!(!out.contains("status="));
 }
 
 #[test]
 fn test_error_response() {
-    let resp = Response::Error { code: "NO_MATCH".to_string(), message: "No memories found".to_string() };
-    assert_eq!(format!("{}", resp), "<error code=\"NO_MATCH\">\n  No memories found\n</error>\n");
+    let resp = Response::Error {
+        code: "NO_MATCH".to_string(),
+        message: "No memories found".to_string(),
+    };
+    assert_eq!(
+        format!("{}", resp),
+        "<error code=\"NO_MATCH\">\n  No memories found\n</error>\n"
+    );
 }
 
 #[test]

@@ -1,5 +1,7 @@
-pub mod provider;
 pub mod gateway;
+pub mod provider;
 
-pub use provider::{EmbeddingProvider, EmbedError, StubProvider, OpenAiEmbeddingProvider, OllamaEmbeddingProvider};
 pub use gateway::EmbeddingGateway;
+pub use provider::{
+    EmbedError, EmbeddingProvider, OllamaEmbeddingProvider, OpenAiEmbeddingProvider, StubProvider,
+};

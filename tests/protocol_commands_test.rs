@@ -7,7 +7,10 @@ fn test_remember_command_display() {
         memory_type: "semantic".to_string(),
         metadata: vec![("importance".to_string(), "0.9".to_string())],
     };
-    assert_eq!(format!("{}", cmd), "REMEMBER \"User prefers dark mode\" AS semantic WITH importance=0.9");
+    assert_eq!(
+        format!("{}", cmd),
+        "REMEMBER \"User prefers dark mode\" AS semantic WITH importance=0.9"
+    );
 }
 
 #[test]
@@ -34,7 +37,10 @@ fn test_recall_command_display() {
         conditions: vec![],
         limit: 5,
     };
-    assert_eq!(format!("{}", cmd), "RECALL \"dark mode\" FROM semantic LIMIT 5");
+    assert_eq!(
+        format!("{}", cmd),
+        "RECALL \"dark mode\" FROM semantic LIMIT 5"
+    );
 }
 
 #[test]
@@ -125,5 +131,8 @@ fn test_recall_with_conditions_display() {
         conditions: vec![("field".to_string(), "=".to_string(), "value".to_string())],
         limit: 10,
     };
-    assert_eq!(format!("{}", cmd), "RECALL \"query\" FROM semantic WHERE field = value LIMIT 10");
+    assert_eq!(
+        format!("{}", cmd),
+        "RECALL \"query\" FROM semantic WHERE field = value LIMIT 10"
+    );
 }

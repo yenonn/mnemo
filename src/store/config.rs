@@ -19,7 +19,9 @@ impl<'a> ConfigStore<'a> {
     }
 
     pub fn get(&self, key: &str) -> rusqlite::Result<Option<String>> {
-        let mut stmt = self.conn.prepare("SELECT value FROM _mnemo_meta WHERE key = ?")?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT value FROM _mnemo_meta WHERE key = ?")?;
         let mut rows = stmt.query([key])?;
         if let Some(row) = rows.next()? {
             Ok(Some(row.get(0)?))
@@ -37,7 +39,8 @@ impl<'a> ConfigStore<'a> {
     }
 
     pub fn delete(&self, key: &str) -> rusqlite::Result<()> {
-        self.conn.execute("DELETE FROM _mnemo_meta WHERE key = ?", [key])?;
+        self.conn
+            .execute("DELETE FROM _mnemo_meta WHERE key = ?", [key])?;
         Ok(())
     }
 }

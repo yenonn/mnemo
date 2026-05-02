@@ -42,11 +42,7 @@ impl<'a> VectorStore<'a> {
     /// Insert an embedding vector for a memory.
     ///
     /// No-op when `vec0` is unavailable.
-    pub fn insert(
-        &self,
-        memory_id: &str,
-        embedding: &[f32],
-    ) -> SqliteResult<()> {
+    pub fn insert(&self, memory_id: &str, embedding: &[f32]) -> SqliteResult<()> {
         if !self.available {
             return Ok(());
         }
@@ -62,11 +58,7 @@ impl<'a> VectorStore<'a> {
     /// ascending distance (lower = closer).
     ///
     /// Empty vector when `vec0` is unavailable.
-    pub fn search(
-        &self,
-        query_vec: &[f32],
-        limit: usize,
-    ) -> SqliteResult<Vec<(String, f64)>> {
+    pub fn search(&self, query_vec: &[f32], limit: usize) -> SqliteResult<Vec<(String, f64)>> {
         if !self.available {
             return Ok(Vec::new());
         }
@@ -76,17 +68,13 @@ impl<'a> VectorStore<'a> {
             "SELECT memory_id, distance FROM memory_vectors
              WHERE embedding MATCH vec_from_json(?)
              ORDER BY distance
-             LIMIT ?"
+             LIMIT ?",
         )?;
-        let rows = stmt.query_map(
-            rusqlite::params![&vec_json, &limit_i64
-            ],
-            |row| {
-                let id: String = row.get(0)?;
-                let dist: f64 = row.get(1)?;
-                Ok((id, dist))
-            },
-        )?;
+        let rows = stmt.query_map(rusqlite::params![&vec_json, &limit_i64], |row| {
+            let id: String = row.get(0)?;
+            let dist: f64 = row.get(1)?;
+            Ok((id, dist))
+        })?;
         rows.collect()
     }
 
@@ -111,9 +99,7 @@ impl<'a> VectorStore<'a> {
         if !self.available {
             return Ok(0);
         }
-        let mut stmt = self
-            .conn
-            .prepare("SELECT COUNT(*) FROM memory_vectors")?;
+        let mut stmt = self.conn.prepare("SELECT COUNT(*) FROM memory_vectors")?;
         let count: i64 = stmt.query_row([], |row| row.get(0))?;
         Ok(count as usize)
     }

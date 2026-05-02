@@ -30,13 +30,20 @@ static SYNONYM_MAP: &[(&str, &[&str])] = &[
         "dark mode",
         &["dark", "night mode", "dark theme", "night theme"],
     ),
-    (
-        "coverage",
-        &["coverage", "test coverage", "code coverage"],
-    ),
+    ("coverage", &["coverage", "test coverage", "code coverage"]),
     (
         "preference",
-        &["preference", "preferences", "prefer", "prefers", "like", "dislike", "hate", "love", "want"],
+        &[
+            "preference",
+            "preferences",
+            "prefer",
+            "prefers",
+            "like",
+            "dislike",
+            "hate",
+            "love",
+            "want",
+        ],
     ),
     // Tools
     (

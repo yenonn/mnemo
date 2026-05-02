@@ -1,6 +1,6 @@
+use crate::lifecycle::config;
 use rusqlite::{Connection, Result as SqliteResult};
 use std::path::Path;
-use crate::lifecycle::config;
 
 pub struct MnemoDb {
     conn: Connection,

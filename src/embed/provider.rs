@@ -1,5 +1,5 @@
-use thiserror::Error;
 use serde_json::json;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum EmbedError {
@@ -79,9 +79,7 @@ impl EmbeddingProvider for OpenAiEmbeddingProvider {
             .and_then(|item| item.get("embedding"))
             .and_then(|emb| emb.as_array())
             .ok_or_else(|| {
-                EmbedError::InvalidResponse(
-                    "Missing embedding data in OpenAI response".into(),
-                )
+                EmbedError::InvalidResponse("Missing embedding data in OpenAI response".into())
             })?;
 
         let vec: Vec<f32> = data
@@ -153,9 +151,7 @@ impl EmbeddingProvider for OllamaEmbeddingProvider {
             .get("embedding")
             .and_then(|emb| emb.as_array())
             .ok_or_else(|| {
-                EmbedError::InvalidResponse(
-                    "Missing 'embedding' in Ollama response".into(),
-                )
+                EmbedError::InvalidResponse("Missing 'embedding' in Ollama response".into())
             })?;
 
         let vec: Vec<f32> = arr

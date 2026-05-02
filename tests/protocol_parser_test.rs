@@ -1,4 +1,4 @@
-use mnemo::protocol::{Command, parse_command};
+use mnemo::protocol::{parse_command, Command};
 
 #[test]
 fn test_parse_init() {
@@ -8,26 +8,33 @@ fn test_parse_init() {
 
 #[test]
 fn test_parse_remember() {
-    let cmd = parse_command("REMEMBER \"hello world\" AS semantic WITH importance=0.9, tags=ui;").unwrap();
-    assert_eq!(cmd, Command::Remember {
-        content: "hello world".to_string(),
-        memory_type: "semantic".to_string(),
-        metadata: vec![
-            ("importance".to_string(), "0.9".to_string()),
-            ("tags".to_string(), "ui".to_string()),
-        ],
-    });
+    let cmd = parse_command("REMEMBER \"hello world\" AS semantic WITH importance=0.9, tags=ui;")
+        .unwrap();
+    assert_eq!(
+        cmd,
+        Command::Remember {
+            content: "hello world".to_string(),
+            memory_type: "semantic".to_string(),
+            metadata: vec![
+                ("importance".to_string(), "0.9".to_string()),
+                ("tags".to_string(), "ui".to_string()),
+            ],
+        }
+    );
 }
 
 #[test]
 fn test_parse_recall() {
     let cmd = parse_command("RECALL \"dark mode\" FROM semantic LIMIT 5;").unwrap();
-    assert_eq!(cmd, Command::Recall {
-        query: "dark mode".to_string(),
-        memory_types: vec!["semantic".to_string()],
-        conditions: vec![],
-        limit: 5,
-    });
+    assert_eq!(
+        cmd,
+        Command::Recall {
+            query: "dark mode".to_string(),
+            memory_types: vec!["semantic".to_string()],
+            conditions: vec![],
+            limit: 5,
+        }
+    );
 }
 
 #[test]
@@ -61,20 +68,26 @@ fn test_parse_unclosed_quotes() {
 #[test]
 fn test_parse_remember_without_with() {
     let cmd = parse_command("REMEMBER \"hello\" AS working;").unwrap();
-    assert_eq!(cmd, Command::Remember {
-        content: "hello".to_string(),
-        memory_type: "working".to_string(),
-        metadata: vec![],
-    });
+    assert_eq!(
+        cmd,
+        Command::Remember {
+            content: "hello".to_string(),
+            memory_type: "working".to_string(),
+            metadata: vec![],
+        }
+    );
 }
 
 #[test]
 fn test_parse_forget_with_id() {
     let cmd = parse_command("FORGET id( abc123 );").unwrap();
-    assert_eq!(cmd, Command::Forget {
-        id: Some("abc123".to_string()),
-        conditions: vec![],
-    });
+    assert_eq!(
+        cmd,
+        Command::Forget {
+            id: Some("abc123".to_string()),
+            conditions: vec![],
+        }
+    );
 }
 
 #[test]
@@ -88,11 +101,14 @@ fn test_parse_forget_invalid() {
 #[test]
 fn test_parse_consolidate() {
     let cmd = parse_command("CONSOLIDATE working TO episodic;").unwrap();
-    assert_eq!(cmd, Command::Consolidate {
-        from: "working".to_string(),
-        to: "episodic".to_string(),
-        conditions: vec![],
-    });
+    assert_eq!(
+        cmd,
+        Command::Consolidate {
+            from: "working".to_string(),
+            to: "episodic".to_string(),
+            conditions: vec![],
+        }
+    );
 }
 
 #[test]
@@ -106,10 +122,13 @@ fn test_parse_consolidate_invalid() {
 #[test]
 fn test_parse_reflect() {
     let cmd = parse_command("REFLECT;").unwrap();
-    assert_eq!(cmd, Command::Reflect {
-        memory_type: None,
-        conditions: vec![],
-    });
+    assert_eq!(
+        cmd,
+        Command::Reflect {
+            memory_type: None,
+            conditions: vec![],
+        }
+    );
 }
 
 #[test]
@@ -123,16 +142,25 @@ fn test_parse_reflect_invalid() {
 #[test]
 fn test_parse_pragma_set() {
     let cmd = parse_command("PRAGMA max_memories = 100;").unwrap();
-    assert_eq!(cmd, Command::Pragma {
-        key: Some("max_memories".to_string()),
-        value: Some("100".to_string()),
-    });
+    assert_eq!(
+        cmd,
+        Command::Pragma {
+            key: Some("max_memories".to_string()),
+            value: Some("100".to_string()),
+        }
+    );
 }
 
 #[test]
 fn test_parse_pragma_get_all() {
     let cmd = parse_command("PRAGMA;").unwrap();
-    assert_eq!(cmd, Command::Pragma { key: None, value: None });
+    assert_eq!(
+        cmd,
+        Command::Pragma {
+            key: None,
+            value: None
+        }
+    );
 }
 
 #[test]
@@ -146,20 +174,26 @@ fn test_parse_pragma_invalid() {
 #[test]
 fn test_parse_extract() {
     let cmd = parse_command("EXTRACT \"I prefer dark mode\";").unwrap();
-    assert_eq!(cmd, Command::Extract {
-        text: "I prefer dark mode".to_string(),
-    });
+    assert_eq!(
+        cmd,
+        Command::Extract {
+            text: "I prefer dark mode".to_string(),
+        }
+    );
 }
 
 #[test]
 fn test_parse_recall_without_types() {
     let cmd = parse_command("RECALL \"query\" LIMIT 10;").unwrap();
-    assert_eq!(cmd, Command::Recall {
-        query: "query".to_string(),
-        memory_types: vec![],
-        conditions: vec![],
-        limit: 10,
-    });
+    assert_eq!(
+        cmd,
+        Command::Recall {
+            query: "query".to_string(),
+            memory_types: vec![],
+            conditions: vec![],
+            limit: 10,
+        }
+    );
 }
 
 #[test]

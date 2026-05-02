@@ -4,19 +4,19 @@ use rusqlite::Connection;
 pub fn auto_recall(conn: &Connection) -> rusqlite::Result<usize> {
     let now = Utc::now().timestamp_millis();
     let mut count = 0;
-    
+
     // Query top 5 episodic memories by created_at desc, confidence > 0.3
     let mut stmt = conn.prepare(
         "SELECT content FROM memories
          WHERE memory_type = 'episodic' AND confidence > 0.3
-         ORDER BY created_at DESC LIMIT 5"
+         ORDER BY created_at DESC LIMIT 5",
     )?;
-    
+
     let rows = stmt.query_map([], |row| {
         let content: String = row.get(0)?;
         Ok(content)
     })?;
-    
+
     for content in rows {
         let content = content?;
         let new_id = format!("mem-recall-{}", nanoid::nanoid!(8));
@@ -27,19 +27,19 @@ pub fn auto_recall(conn: &Connection) -> rusqlite::Result<usize> {
         )?;
         count += 1;
     }
-    
+
     // Query top 5 semantic memories by importance desc
     let mut stmt = conn.prepare(
         "SELECT content FROM memories
          WHERE memory_type = 'semantic'
-         ORDER BY importance DESC LIMIT 5"
+         ORDER BY importance DESC LIMIT 5",
     )?;
-    
+
     let rows = stmt.query_map([], |row| {
         let content: String = row.get(0)?;
         Ok(content)
     })?;
-    
+
     for content in rows {
         let content = content?;
         let new_id = format!("mem-recall-{}", nanoid::nanoid!(8));
@@ -50,7 +50,7 @@ pub fn auto_recall(conn: &Connection) -> rusqlite::Result<usize> {
         )?;
         count += 1;
     }
-    
+
     Ok(count)
 }
 
@@ -62,7 +62,8 @@ mod tests {
     #[test]
     fn test_auto_recall_empty_db() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute_batch(r#"
+        conn.execute_batch(
+            r#"
             CREATE TABLE memories (
                 id TEXT PRIMARY KEY,
                 memory_type TEXT NOT NULL,
@@ -72,7 +73,9 @@ mod tests {
                 importance REAL DEFAULT 0.5,
                 source_type TEXT
             );
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let count = auto_recall(&conn).unwrap();
         assert_eq!(count, 0);
     }

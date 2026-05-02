@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::fmt;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -30,7 +30,9 @@ impl fmt::Display for ExtractResult {
 
 /// Parse extraction JSON returned by an LLM.
 /// Expected format: [{"content": "...", "tier": "semantic|episodic", "importance": 0.9}]
-pub fn parse_extraction_json(json_str: &str) -> Result<Vec<ExtractResult>, Box<dyn std::error::Error>> {
+pub fn parse_extraction_json(
+    json_str: &str,
+) -> Result<Vec<ExtractResult>, Box<dyn std::error::Error>> {
     let raw_results: Vec<serde_json::Value> = serde_json::from_str(json_str)?;
     let mut results = Vec::new();
 
@@ -66,14 +68,21 @@ pub fn parse_extraction_json(json_str: &str) -> Result<Vec<ExtractResult>, Box<d
 pub fn classify_tier(content: &str) -> &str {
     let lower = content.to_lowercase();
 
-    if lower.contains("said") || lower.contains("today") || lower.contains("yesterday")
-        || lower.contains("had a") || lower.contains("told me")
+    if lower.contains("said")
+        || lower.contains("today")
+        || lower.contains("yesterday")
+        || lower.contains("had a")
+        || lower.contains("told me")
     {
         return "episodic";
     }
 
-    if lower.contains("prefer") || lower.contains("like") || lower.contains("hate")
-        || lower.contains("use") || lower.contains("always") || lower.contains("never")
+    if lower.contains("prefer")
+        || lower.contains("like")
+        || lower.contains("hate")
+        || lower.contains("use")
+        || lower.contains("always")
+        || lower.contains("never")
     {
         return "semantic";
     }
@@ -112,8 +121,8 @@ pub struct OpenAiConfig {
 impl OpenAiConfig {
     pub fn from_env() -> Option<Self> {
         let api_key = std::env::var("MNEMO_OPENAI_API_KEY").ok()?;
-        let model = std::env::var("MNEMO_OPENAI_MODEL")
-            .unwrap_or_else(|_| "gpt-4o-mini".to_string());
+        let model =
+            std::env::var("MNEMO_OPENAI_MODEL").unwrap_or_else(|_| "gpt-4o-mini".to_string());
         let base_url = std::env::var("MNEMO_OPENAI_BASE_URL")
             .unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
         Some(OpenAiConfig {
@@ -186,7 +195,9 @@ fn local_extract(text: &str) -> Result<Vec<ExtractResult>, Box<dyn std::error::E
 
     for sentence in sentences {
         let lower = sentence.to_lowercase();
-        if lower.starts_with("i ") || lower.starts_with("my ") || lower.starts_with("i'm ")
+        if lower.starts_with("i ")
+            || lower.starts_with("my ")
+            || lower.starts_with("i'm ")
             || lower.starts_with("i am ")
         {
             let tier = classify_tier(sentence);
@@ -204,9 +215,9 @@ fn local_extract(text: &str) -> Result<Vec<ExtractResult>, Box<dyn std::error::E
 
 fn rephrase_third_person(text: &str) -> String {
     let cleaned = text
-        .trim_start_matches("I ")  
-        .trim_start_matches("I'm ")  
-        .trim_start_matches("I am ")  
+        .trim_start_matches("I ")
+        .trim_start_matches("I'm ")
+        .trim_start_matches("I am ")
         .trim_start_matches("My ");
     format!("User {}", cleaned)
 }

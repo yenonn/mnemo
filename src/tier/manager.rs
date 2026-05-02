@@ -81,8 +81,14 @@ impl<'a> TierManager<'a> {
         vstore: &crate::store::VectorStore,
         gateway: &crate::embed::EmbeddingGateway,
     ) -> rusqlite::Result<Vec<Memory>> {
-        self.store
-            .search_hybrid(query_text, expanded_terms, memory_types, limit, vstore, gateway)
+        self.store.search_hybrid(
+            query_text,
+            expanded_terms,
+            memory_types,
+            limit,
+            vstore,
+            gateway,
+        )
     }
 
     pub fn consolidate_working_to_episodic(&mut self) -> rusqlite::Result<Option<String>> {
@@ -92,7 +98,9 @@ impl<'a> TierManager<'a> {
         }
 
         // Delete DB working rows
-        self.store.conn().execute("DELETE FROM memories WHERE memory_type = 'working'", [])?;
+        self.store
+            .conn()
+            .execute("DELETE FROM memories WHERE memory_type = 'working'", [])?;
 
         let contents: Vec<String> = entries.iter().map(|e| e.content.clone()).collect();
         let summary = format!("[Consolidated] {}", contents.join("; "));
@@ -105,7 +113,10 @@ impl<'a> TierManager<'a> {
 
     pub fn clear_working(&mut self) {
         self.working.clear();
-        let _ = self.store.conn().execute("DELETE FROM memories WHERE memory_type = 'working'", []);
+        let _ = self
+            .store
+            .conn()
+            .execute("DELETE FROM memories WHERE memory_type = 'working'", []);
     }
 
     pub fn consolidate_episodic_to_semantic(

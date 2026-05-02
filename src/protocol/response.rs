@@ -2,8 +2,13 @@ use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Response {
-    Ok { message: String },
-    Error { code: String, message: String },
+    Ok {
+        message: String,
+    },
+    Error {
+        code: String,
+        message: String,
+    },
     Memory {
         id: String,
         memory_type: String,
@@ -13,7 +18,10 @@ pub enum Response {
         content: String,
         status: Option<String>,
     },
-    ResultSet { count: usize, memories: Vec<Response> },
+    ResultSet {
+        count: usize,
+        memories: Vec<Response>,
+    },
     Status {
         agent_id: String,
         db_path: String,
@@ -24,7 +32,9 @@ pub enum Response {
         vector_indexed: usize,
         pending_embeddings: usize,
     },
-    Config { entries: Vec<(String, String)> },
+    Config {
+        entries: Vec<(String, String)>,
+    },
     Reflect {
         total_episodic: usize,
         total_semantic: usize,
@@ -47,9 +57,20 @@ impl fmt::Display for Response {
                 writeln!(f, "  {}", message)?;
                 writeln!(f, "</error>")
             }
-            Response::Memory { id, memory_type, confidence, importance, score, content, status } => {
-                write!(f, "<memory id=\"{}\" type=\"{}\" confidence=\"{}\" importance=\"{}\"",
-                       id, memory_type, confidence, importance)?;
+            Response::Memory {
+                id,
+                memory_type,
+                confidence,
+                importance,
+                score,
+                content,
+                status,
+            } => {
+                write!(
+                    f,
+                    "<memory id=\"{}\" type=\"{}\" confidence=\"{}\" importance=\"{}\"",
+                    id, memory_type, confidence, importance
+                )?;
                 if let Some(s) = score {
                     write!(f, " score=\"{}\"", s)?;
                 }
@@ -67,14 +88,27 @@ impl fmt::Display for Response {
                 }
                 writeln!(f, "</result>")
             }
-            Response::Status { agent_id, db_path, db_size_kb, working_count, episodic_count, semantic_count, vector_indexed, pending_embeddings } => {
+            Response::Status {
+                agent_id,
+                db_path,
+                db_size_kb,
+                working_count,
+                episodic_count,
+                semantic_count,
+                vector_indexed,
+                pending_embeddings,
+            } => {
                 writeln!(f, "<status>")?;
                 writeln!(f, "  Agent: {}", agent_id)?;
                 writeln!(f, "  Database: {} ({} KB)", db_path, db_size_kb)?;
                 writeln!(f, "  Working buffer: {}", working_count)?;
                 writeln!(f, "  Episodic memories: {}", episodic_count)?;
                 writeln!(f, "  Semantic memories: {}", semantic_count)?;
-                writeln!(f, "  Vector indexed: {} ({} pending)", vector_indexed, pending_embeddings)?;
+                writeln!(
+                    f,
+                    "  Vector indexed: {} ({} pending)",
+                    vector_indexed, pending_embeddings
+                )?;
                 writeln!(f, "</status>")
             }
             Response::Config { entries } => {
@@ -84,9 +118,19 @@ impl fmt::Display for Response {
                 }
                 writeln!(f, "</config>")
             }
-            Response::Reflect { total_episodic, total_semantic, low_confidence, contradictions, stale } => {
+            Response::Reflect {
+                total_episodic,
+                total_semantic,
+                low_confidence,
+                contradictions,
+                stale,
+            } => {
                 writeln!(f, "<analysis>")?;
-                writeln!(f, "  Memory count: {} episodic, {} semantic", total_episodic, total_semantic)?;
+                writeln!(
+                    f,
+                    "  Memory count: {} episodic, {} semantic",
+                    total_episodic, total_semantic
+                )?;
                 writeln!(f, "  Low-confidence items: {}", low_confidence)?;
                 if !contradictions.is_empty() {
                     writeln!(f, "  Potential contradictions: {}", contradictions.len())?;
@@ -102,5 +146,8 @@ impl fmt::Display for Response {
 }
 
 fn indent(s: String) -> String {
-    s.lines().map(|line| format!("  {}", line)).collect::<Vec<_>>().join("\n")
+    s.lines()
+        .map(|line| format!("  {}", line))
+        .collect::<Vec<_>>()
+        .join("\n")
 }

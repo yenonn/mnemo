@@ -253,7 +253,8 @@ fn handle_remember(
             };
 
             // Run lifecycle hooks
-            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_results =
+                crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
             let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
 
             let result = match memory_type {
@@ -309,7 +310,8 @@ fn handle_recall(
             };
 
             // Run lifecycle hooks
-            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_results =
+                crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
             let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
 
             let types_to_search: Vec<String> = match memory_type {
@@ -318,7 +320,8 @@ fn handle_recall(
             };
 
             // Expand query with synonyms and morphology for broader recall
-            let query_terms: Vec<String> = query.split_whitespace().map(|s| s.to_string()).collect();
+            let query_terms: Vec<String> =
+                query.split_whitespace().map(|s| s.to_string()).collect();
             let expanded = crate::context::expand_query(&query_terms);
 
             match manager.recall_expanded(&expanded, &types_to_search, limit) {
@@ -399,7 +402,8 @@ fn handle_extract(
             };
 
             // Run lifecycle hooks
-            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_results =
+                crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
             let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
 
             let mut stored_ids = Vec::new();
@@ -452,7 +456,8 @@ fn handle_status(id: Option<serde_json::Value>, agent_id: &str) -> McpResponse {
                 }
             };
 
-            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_results =
+                crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
             let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
 
             let text = format!(
@@ -505,7 +510,8 @@ fn handle_bind(
                 };
 
                 // Run lifecycle hooks
-                let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+                let hook_results =
+                    crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
                 let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
 
                 let types_to_search = vec![
@@ -529,7 +535,12 @@ fn handle_bind(
                     if vstore.available() && gateway.dimensions() > 0 {
                         manager
                             .recall_hybrid(
-                                &query, &expanded, &types_to_search, 20, &vstore, &gateway,
+                                &query,
+                                &expanded,
+                                &types_to_search,
+                                20,
+                                &vstore,
+                                &gateway,
                             )
                             .unwrap_or_default()
                     } else {
@@ -569,7 +580,10 @@ fn handle_bind(
                 } else {
                     format!(
                         "{}\n\n{}\n\nQuery intent: {:?} (confidence: {:.2})",
-                        hook_texts.join("\n"), retrieved, intent.intent_type, intent.confidence
+                        hook_texts.join("\n"),
+                        retrieved,
+                        intent.intent_type,
+                        intent.confidence
                     )
                 };
 
@@ -615,7 +629,8 @@ fn handle_forget(
             };
 
             // Run lifecycle hooks
-            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_results =
+                crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
             let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
 
             let store = crate::store::MemoryStore::new(db.conn());

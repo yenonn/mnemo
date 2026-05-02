@@ -1,9 +1,9 @@
+pub mod context;
+pub mod embed;
+pub mod extract;
+pub mod lifecycle;
+pub mod mcp;
 pub mod protocol;
+pub mod repl;
 pub mod store;
 pub mod tier;
-pub mod embed;
-pub mod lifecycle;
-pub mod repl;
-pub mod extract;
-pub mod mcp;
-pub mod context;

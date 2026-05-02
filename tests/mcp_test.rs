@@ -162,7 +162,10 @@ fn test_mcp_forget_tool() {
     );
     let result = remember_resp.result.unwrap();
     let content_str = result.get("content").unwrap().as_array().unwrap()[0]
-        .get("text").unwrap().as_str().unwrap();
+        .get("text")
+        .unwrap()
+        .as_str()
+        .unwrap();
     let mem_id = content_str.split_whitespace().last().unwrap();
 
     let resp = handle_request(
@@ -182,7 +185,10 @@ fn test_mcp_forget_tool() {
     assert!(resp.error.is_none());
     let result = resp.result.unwrap();
     let text = result.get("content").unwrap().as_array().unwrap()[0]
-        .get("text").unwrap().as_str().unwrap();
+        .get("text")
+        .unwrap()
+        .as_str()
+        .unwrap();
     assert!(text.contains("Deleted"));
 }
 
@@ -206,7 +212,10 @@ fn test_mcp_status_tool() {
     assert!(resp.error.is_none());
     let result = resp.result.unwrap();
     let text = result.get("content").unwrap().as_array().unwrap()[0]
-        .get("text").unwrap().as_str().unwrap();
+        .get("text")
+        .unwrap()
+        .as_str()
+        .unwrap();
     assert!(text.contains("Working:"));
     assert!(text.contains("Episodic:"));
     assert!(text.contains("Semantic:"));

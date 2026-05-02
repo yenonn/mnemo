@@ -100,38 +100,41 @@ fn main() {
         let mut repl = Repl::new(&cli.agent_id).expect("Failed to initialize");
 
         let response = match cmd {
-            MnemoCommand::Remember { text, memory_type, importance } => {
-                repl.execute(Command::Remember {
-                    content: text,
-                    memory_type,
-                    metadata: importance.map(|i| vec![("importance".to_string(), i.to_string())]).unwrap_or_default(),
-                })
-            }
-            MnemoCommand::Recall { query, memory_type, limit } => {
-                repl.execute(Command::Recall {
-                    query,
-                    memory_types: memory_type.map(|t| vec![t]).unwrap_or_default(),
-                    conditions: vec![],
-                    limit,
-                })
-            }
+            MnemoCommand::Remember {
+                text,
+                memory_type,
+                importance,
+            } => repl.execute(Command::Remember {
+                content: text,
+                memory_type,
+                metadata: importance
+                    .map(|i| vec![("importance".to_string(), i.to_string())])
+                    .unwrap_or_default(),
+            }),
+            MnemoCommand::Recall {
+                query,
+                memory_type,
+                limit,
+            } => repl.execute(Command::Recall {
+                query,
+                memory_types: memory_type.map(|t| vec![t]).unwrap_or_default(),
+                conditions: vec![],
+                limit,
+            }),
             MnemoCommand::Status => repl.execute(Command::Status),
             MnemoCommand::Init => repl.execute(Command::Init),
-            MnemoCommand::Consolidate { from, to } => {
-                repl.execute(Command::Consolidate { from, to, conditions: vec![] })
-            }
-            MnemoCommand::Extract { text } => {
-                repl.execute(Command::Extract { text })
-            }
-            MnemoCommand::Bind { text } => {
-                repl.execute(Command::Bind { text })
-            }
-            MnemoCommand::Forget { id } => {
-                repl.execute(Command::Forget { id: Some(id), conditions: vec![] })
-            }
-            MnemoCommand::Pragma { key, value } => {
-                repl.execute(Command::Pragma { key, value })
-            }
+            MnemoCommand::Consolidate { from, to } => repl.execute(Command::Consolidate {
+                from,
+                to,
+                conditions: vec![],
+            }),
+            MnemoCommand::Extract { text } => repl.execute(Command::Extract { text }),
+            MnemoCommand::Bind { text } => repl.execute(Command::Bind { text }),
+            MnemoCommand::Forget { id } => repl.execute(Command::Forget {
+                id: Some(id),
+                conditions: vec![],
+            }),
+            MnemoCommand::Pragma { key, value } => repl.execute(Command::Pragma { key, value }),
         };
         println!("{}", response);
     } else {

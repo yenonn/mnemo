@@ -21,13 +21,13 @@ fn test_lifecycle_idle_consolidation() {
     let past_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_millis() as i64 - 120_000;
+        .as_millis() as i64
+        - 120_000;
     conn.execute(
         "INSERT OR REPLACE INTO _mnemo_meta (key, value) VALUES ('lifecycle_last_activity', ?)",
-        [
-            &past_time.to_string()
-        ],
-    ).unwrap();
+        [&past_time.to_string()],
+    )
+    .unwrap();
     drop(conn);
 
     // 3. Next command should trigger session-end consolidation
@@ -66,13 +66,13 @@ fn test_lifecycle_disabled() {
     let past_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_millis() as i64 - 120_000;
+        .as_millis() as i64
+        - 120_000;
     conn.execute(
         "INSERT OR REPLACE INTO _mnemo_meta (key, value) VALUES ('lifecycle_last_activity', ?)",
-        [
-            &past_time.to_string()
-        ],
-    ).unwrap();
+        [&past_time.to_string()],
+    )
+    .unwrap();
     drop(conn);
 
     // Next command should NOT consolidate (lifecycle disabled)
@@ -104,13 +104,13 @@ fn test_lifecycle_auto_recall() {
     let past_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_millis() as i64 - 120_000;
+        .as_millis() as i64
+        - 120_000;
     conn.execute(
         "INSERT OR REPLACE INTO _mnemo_meta (key, value) VALUES ('lifecycle_last_activity', ?)",
-        [
-            &past_time.to_string()
-        ],
-    ).unwrap();
+        [&past_time.to_string()],
+    )
+    .unwrap();
     drop(conn);
 
     // Status should trigger session-start which recalls context
@@ -184,13 +184,13 @@ fn test_lifecycle_mcp_remember_hooks() {
     let past_time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_millis() as i64 - 120_000;
+        .as_millis() as i64
+        - 120_000;
     conn.execute(
         "INSERT OR REPLACE INTO _mnemo_meta (key, value) VALUES ('lifecycle_last_activity', ?)",
-        [
-            &past_time.to_string()
-        ],
-    ).unwrap();
+        [&past_time.to_string()],
+    )
+    .unwrap();
     drop(conn);
 
     let resp = handle_request(
@@ -208,6 +208,12 @@ fn test_lifecycle_mcp_remember_hooks() {
     assert!(resp.error.is_none());
     let result = resp.result.unwrap();
     let text = result.get("content").unwrap().as_array().unwrap()[0]
-        .get("text").unwrap().as_str().unwrap();
-    assert!(text.contains("Working:") || text.contains("session-start"), "Should contain status or session-start");
+        .get("text")
+        .unwrap()
+        .as_str()
+        .unwrap();
+    assert!(
+        text.contains("Working:") || text.contains("session-start"),
+        "Should contain status or session-start"
+    );
 }

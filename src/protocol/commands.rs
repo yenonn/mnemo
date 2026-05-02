@@ -44,7 +44,11 @@ impl fmt::Display for Command {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Command::Init => write!(f, "INIT"),
-            Command::Remember { content, memory_type, metadata } => {
+            Command::Remember {
+                content,
+                memory_type,
+                metadata,
+            } => {
                 write!(f, "REMEMBER \"{}\" AS {}", content, memory_type)?;
                 if !metadata.is_empty() {
                     let meta_str: Vec<String> = metadata
@@ -54,8 +58,13 @@ impl fmt::Display for Command {
                     write!(f, " WITH {}", meta_str.join(", "))?;
                 }
                 Ok(())
-            },
-            Command::Recall { query, memory_types, conditions, limit } => {
+            }
+            Command::Recall {
+                query,
+                memory_types,
+                conditions,
+                limit,
+            } => {
                 write!(f, "RECALL \"{}\"", query)?;
                 if !memory_types.is_empty() {
                     write!(f, " FROM {}", memory_types.join(", "))?;
@@ -68,7 +77,7 @@ impl fmt::Display for Command {
                     write!(f, " WHERE {}", cond_str.join(" AND "))?;
                 }
                 write!(f, " LIMIT {}", limit)
-            },
+            }
             Command::Forget { id, .. } => match id {
                 Some(i) => write!(f, "FORGET id({})", i),
                 None => write!(f, "FORGET WHERE ..."),
@@ -78,10 +87,10 @@ impl fmt::Display for Command {
             Command::Status => write!(f, "STATUS"),
             Command::Extract { text } => {
                 write!(f, "EXTRACT \"{}\"", text)
-            },
+            }
             Command::Bind { text } => {
                 write!(f, "BIND \"{}\"", text)
-            },
+            }
             Command::Pragma { key, value } => match (key, value) {
                 (Some(k), Some(v)) => write!(f, "PRAGMA {} = {}", k, v),
                 _ => write!(f, "PRAGMA"),

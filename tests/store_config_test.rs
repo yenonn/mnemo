@@ -1,4 +1,4 @@
-use mnemo::store::{MnemoDb, ConfigStore};
+use mnemo::store::{ConfigStore, MnemoDb};
 use tempfile::TempDir;
 
 #[test]
@@ -9,11 +9,17 @@ fn test_config_crud() {
 
     // Insert
     store.set("embedding_provider", "ollama").unwrap();
-    assert_eq!(store.get("embedding_provider").unwrap(), Some("ollama".to_string()));
+    assert_eq!(
+        store.get("embedding_provider").unwrap(),
+        Some("ollama".to_string())
+    );
 
     // Update (should overwrite)
     store.set("embedding_provider", "openai").unwrap();
-    assert_eq!(store.get("embedding_provider").unwrap(), Some("openai".to_string()));
+    assert_eq!(
+        store.get("embedding_provider").unwrap(),
+        Some("openai".to_string())
+    );
 
     // Get all (should include lifecycle defaults)
     let all = store.get_all().unwrap();

@@ -10,7 +10,9 @@ fn test_recall_finds_memory_with_different_phrasing() {
     let mut remember = Command::cargo_bin("mnemo").unwrap();
     remember.env("HOME", dir.path());
     remember.arg("--agent-id").arg(agent_id);
-    remember.arg("remember").arg("User prefers code coverage of at least 80%");
+    remember
+        .arg("remember")
+        .arg("User prefers code coverage of at least 80%");
     remember.arg("--memory-type").arg("semantic");
     remember.assert().success();
 
