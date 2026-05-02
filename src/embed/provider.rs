@@ -1,4 +1,5 @@
 use thiserror::Error;
+use serde_json::json;
 
 #[derive(Error, Debug)]
 pub enum EmbedError {
