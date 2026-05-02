@@ -301,12 +301,16 @@ fn handle_recall(
 
     match crate::store::MnemoDb::new(&db_path) {
         Ok(db) => {
-            let manager = match crate::tier::TierManager::new(db.conn(), 100) {
+            let mut manager = match crate::tier::TierManager::new(db.conn(), 100) {
                 Ok(m) => m,
                 Err(e) => {
                     return McpResponse::error(id, -32603, format!("DB error: {}", e));
                 }
             };
+
+            // Run lifecycle hooks
+            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
 
             let types_to_search: Vec<String> = match memory_type {
                 Some(t) => vec![t.to_string()],
@@ -325,7 +329,7 @@ fn handle_recall(
                         })
                         .collect();
 
-                    let text = if memory_texts.is_empty() {
+                    let recall_text = if memory_texts.is_empty() {
                         "No memories found.".to_string()
                     } else {
                         format!(
@@ -333,6 +337,12 @@ fn handle_recall(
                             memory_texts.len(),
                             memory_texts.join("\n")
                         )
+                    };
+
+                    let text = if hook_texts.is_empty() {
+                        recall_text
+                    } else {
+                        format!("{}\n\n{}", hook_texts.join("\n"), recall_text)
                     };
 
                     McpResponse::success(
@@ -384,6 +394,10 @@ fn handle_extract(
                 }
             };
 
+            // Run lifecycle hooks
+            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
+
             let mut stored_ids = Vec::new();
             for result in results {
                 let store_result = match result.tier.as_str() {
@@ -399,11 +413,17 @@ fn handle_extract(
                 }
             }
 
-            let text = format!(
+            let extract_text = format!(
                 "Extracted and stored {} memories: {}",
                 stored_ids.len(),
                 stored_ids.join(", ")
             );
+
+            let text = if hook_texts.is_empty() {
+                extract_text
+            } else {
+                format!("{}\n\n{}", hook_texts.join("\n"), extract_text)
+            };
             McpResponse::success(
                 id,
                 json!({
@@ -421,12 +441,15 @@ fn handle_status(id: Option<serde_json::Value>, agent_id: &str) -> McpResponse {
 
     match crate::store::MnemoDb::new(&db_path) {
         Ok(db) => {
-            let manager = match crate::tier::TierManager::new(db.conn(), 100) {
+            let mut manager = match crate::tier::TierManager::new(db.conn(), 100) {
                 Ok(m) => m,
                 Err(e) => {
                     return McpResponse::error(id, -32603, format!("DB error: {}", e));
                 }
             };
+
+            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
 
             let text = format!(
                 "Working: {} | Episodic: {} | Semantic: {}",
@@ -435,10 +458,16 @@ fn handle_status(id: Option<serde_json::Value>, agent_id: &str) -> McpResponse {
                 manager.semantic_count().unwrap_or(0)
             );
 
+            let response_text = if hook_texts.is_empty() {
+                text
+            } else {
+                format!("{}\n\n{}", hook_texts.join("\n"), text)
+            };
+
             McpResponse::success(
                 id,
                 json!({
-                    "content": [{"type": "text", "text": text}]
+                    "content": [{"type": "text", "text": response_text}]
                 }),
             )
         }
@@ -470,6 +499,10 @@ fn handle_bind(
                     Ok(m) => m,
                     Err(e) => return McpResponse::error(id, -32603, format!("DB error: {}", e)),
                 };
+
+                // Run lifecycle hooks
+                let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+                let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
 
                 let types_to_search = vec![
                     "working".to_string(),
@@ -524,10 +557,17 @@ fn handle_bind(
 
                 let _ = manager.remember_working(&format!("User asked: {}", text));
 
-                let response_text = format!(
-                    "{}\n\nQuery intent: {:?} (confidence: {:.2})",
-                    retrieved, intent.intent_type, intent.confidence
-                );
+                let response_text = if hook_texts.is_empty() {
+                    format!(
+                        "{}\n\nQuery intent: {:?} (confidence: {:.2})",
+                        retrieved, intent.intent_type, intent.confidence
+                    )
+                } else {
+                    format!(
+                        "{}\n\n{}\n\nQuery intent: {:?} (confidence: {:.2})",
+                        hook_texts.join("\n"), retrieved, intent.intent_type, intent.confidence
+                    )
+                };
 
                 McpResponse::success(
                     id,
@@ -563,14 +603,32 @@ fn handle_forget(
 
     match crate::store::MnemoDb::new(&db_path) {
         Ok(db) => {
+            let mut manager = match crate::tier::TierManager::new(db.conn(), 100) {
+                Ok(m) => m,
+                Err(e) => {
+                    return McpResponse::error(id, -32603, format!("DB error: {}", e));
+                }
+            };
+
+            // Run lifecycle hooks
+            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
+
             let store = crate::store::MemoryStore::new(db.conn());
             match store.delete(mem_id) {
-                Ok(()) => McpResponse::success(
-                    id,
-                    json!({
-                        "content": [{"type": "text", "text": format!("Deleted memory {}", mem_id)}]
-                    }),
-                ),
+                Ok(()) => {
+                    let text = if hook_texts.is_empty() {
+                        format!("Deleted memory {}", mem_id)
+                    } else {
+                        format!("{}\n\nDeleted memory {}", hook_texts.join("\n"), mem_id)
+                    };
+                    McpResponse::success(
+                        id,
+                        json!({
+                            "content": [{"type": "text", "text": text}]
+                        }),
+                    )
+                }
                 Err(e) => McpResponse::error(id, -32603, format!("Delete error: {}", e)),
             }
         }
