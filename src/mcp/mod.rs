@@ -168,6 +168,20 @@ fn handle_tools_list(req: McpRequest) -> McpResponse {
                         },
                         "required": ["id"]
                     }
+                },
+                {
+                    "name": "bind",
+                    "description": "Process a natural language message and automatically retrieve relevant memories or store new ones based on intent detection.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "text": {
+                                "type": "string",
+                                "description": "Natural language text to process"
+                            }
+                        },
+                        "required": ["text"]
+                    }
                 }
             ]
         }),
@@ -196,6 +210,7 @@ fn handle_tools_call(req: McpRequest, agent_id: &str) -> McpResponse {
         "remember" => handle_remember(req.id, args, agent_id),
         "recall" => handle_recall(req.id, args, agent_id),
         "extract" => handle_extract(req.id, args, agent_id),
+        "bind" => handle_bind(req.id, args, agent_id),
         "status" => handle_status(req.id, agent_id),
         "forget" => handle_forget(req.id, args, agent_id),
         _ => McpResponse::error(
@@ -435,6 +450,75 @@ fn handle_status(id: Option<serde_json::Value>, agent_id: &str) -> McpResponse {
                     "content": [{"type": "text", "text": text}]
                 }),
             )
+        }
+        Err(e) => McpResponse::error(id, -32603, format!("DB init error: {}", e)),
+    }
+}
+
+fn handle_bind(
+    id: Option<serde_json::Value>,
+    args: serde_json::Value,
+    agent_id: &str,
+) -> McpResponse {
+    let text = args.get("text").and_then(|t| t.as_str()).unwrap_or("");
+    if text.is_empty() {
+        return McpResponse::error(id, -32602, "Missing text".to_string());
+    }
+
+    let db_path = get_db_path(agent_id);
+    ensure_db_dir(&db_path);
+
+    match crate::store::MnemoDb::new(&db_path) {
+        Ok(db) => {
+            use crate::context::{analyze_intent, build_query};
+            use crate::tier::TierManager;
+
+            if let Some(intent) = analyze_intent(text) {
+                let query = build_query(&intent);
+                let mut manager = match TierManager::new(db.conn(), 100) {
+                    Ok(m) => m,
+                    Err(e) => return McpResponse::error(id, -32603, format!("DB error: {}", e)),
+                };
+
+                let types_to_search = vec!["working".to_string(), "episodic".to_string(), "semantic".to_string()];
+
+                match manager.recall(&query, &types_to_search, 20) {
+                    Ok(memories) => {
+                        let memory_texts: Vec<String> = memories
+                            .iter()
+                            .map(|m| format!("[{}] {}", m.memory_type, m.content))
+                            .collect();
+
+                        let retrieved = if memory_texts.is_empty() {
+                            "No matching memories found.".to_string()
+                        } else {
+                            format!("Found {} memories:\n{}", memory_texts.len(), memory_texts.join("\n"))
+                        };
+
+                        let _ = manager.remember_working(&format!("User asked: {}", text));
+
+                        let response_text = format!(
+                            "{}\n\nQuery intent: {:?} (confidence: {:.2})",
+                            retrieved, intent.intent_type, intent.confidence
+                        );
+
+                        McpResponse::success(
+                            id,
+                            json!({
+                                "content": [{"type": "text", "text": response_text}]
+                            }),
+                        )
+                    }
+                    Err(e) => McpResponse::error(id, -32603, format!("Recall error: {}", e)),
+                }
+            } else {
+                McpResponse::success(
+                    id,
+                    json!({
+                        "content": [{"type": "text", "text": "No clear retrieval intent detected. Message stored in working memory."}]
+                    }),
+                )
+            }
         }
         Err(e) => McpResponse::error(id, -32603, format!("DB init error: {}", e)),
     }

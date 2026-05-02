@@ -39,6 +39,56 @@ Memories naturally consolidate up the tiers:
 Working → Episodic → Semantic
 ```
 
+## Quick Demo
+
+```bash
+# Build once
+cargo build --release
+
+# --- Imagine an AI agent chatting with a user ---
+
+# 1. User says something — agent stores it in working memory
+mnemo remember "User said they are tired today" --type working
+
+# 2. Agent recalls recent context
+mnemo recall "tired"
+# → 1 result from working memory
+
+# 3. User mentions a long-term preference
+mnemo remember "User prefers dark mode" --type semantic
+
+# 4. Later, the agent wants to know all stored knowledge
+mnemo status
+# → 1 working, 1 semantic
+
+# 5. Agent extracts multiple memories from natural language
+mnemo extract "I had a bad day. I use vim and hate popups."
+# → 3 memories extracted and stored automatically
+
+# 6. Search across all tiers
+mnemo recall "vim" --limit 5
+# → memories from all tiers
+
+# 7. Promote working memory into long-term storage
+mnemo consolidate working episodic
+mnemo consolidate episodic semantic
+
+# 8. Done
+mnemo status
+# → 0 working, 0 episodic, 4 semantic
+
+# --- NEW: Implicit Context Retrieval (BIND) ---
+
+# Agent processes user message WITHOUT explicit tool calls:
+# "What were my todos yesterday?" → auto-detects retrieval intent
+mnemo bind "What were my todos yesterday?"
+# → Retrieved 3 episodic memories automatically
+
+# "I prefer dark mode" → auto-detects store intent  
+mnemo bind "I prefer dark mode"
+# → Extracted and stored 1 memory automatically
+```
+
 ## Installation
 
 ### From Source

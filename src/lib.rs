@@ -6,3 +6,4 @@ pub mod lifecycle;
 pub mod repl;
 pub mod extract;
 pub mod mcp;
+pub mod context;

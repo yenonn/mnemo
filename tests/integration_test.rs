@@ -1,6 +1,5 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
-// use std::fs; // not used
 use tempfile::TempDir;
 
 #[test]
@@ -113,4 +112,44 @@ fn test_pragma_get_set() {
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("test_key = test_value"));
+}
+
+#[test]
+fn test_bind_retrieve_intent() {
+    let dir = TempDir::new().unwrap();
+    let agent_id = "test-agent-bind-retrieve";
+    
+    // Store memory with matching keywords
+    let mut cmd = Command::cargo_bin("mnemo").unwrap();
+    cmd.env("HOME", dir.path());
+    cmd.arg("--agent-id").arg(agent_id);
+    cmd.arg("remember").arg("User preferences include dark themes for all applications");
+    cmd.arg("--memory-type").arg("semantic");
+    cmd.assert().success();
+    
+    // Use BIND to retrieve using exact matching terms
+    let mut cmd = Command::cargo_bin("mnemo").unwrap();
+    cmd.env("HOME", dir.path());
+    cmd.arg("--agent-id").arg(agent_id);
+    cmd.arg("bind").arg("What are my preferences?");
+    cmd.assert()
+        .success()
+        .stdout(predicates::str::contains("Found"))
+        .stdout(predicates::str::contains("preferences"));
+}
+
+#[test]
+fn test_bind_store_intent() {
+    let dir = TempDir::new().unwrap();
+    let agent_id = "test-agent-bind-store";
+    
+    // Use BIND with clear store signal
+    let mut cmd = Command::cargo_bin("mnemo").unwrap();
+    cmd.env("HOME", dir.path());
+    cmd.arg("--agent-id").arg(agent_id);
+    cmd.arg("bind").arg("I prefer using vim for all my coding");
+    cmd.assert()
+        .success()
+        .stdout(predicates::str::contains("Extracted and stored"))
+        .stdout(predicates::str::contains("mem-"));
 }

@@ -63,6 +63,11 @@ enum MnemoCommand {
         #[arg(value_name = "ID")]
         id: String,
     },
+    /// Process natural language with implicit intent
+    Bind {
+        #[arg(value_name = "TEXT")]
+        text: String,
+    },
     /// Set or show configuration
     Pragma {
         #[arg(value_name = "KEY")]
@@ -117,6 +122,9 @@ fn main() {
             }
             MnemoCommand::Extract { text } => {
                 repl.execute(Command::Extract { text })
+            }
+            MnemoCommand::Bind { text } => {
+                repl.execute(Command::Bind { text })
             }
             MnemoCommand::Forget { id } => {
                 repl.execute(Command::Forget { id: Some(id), conditions: vec![] })
