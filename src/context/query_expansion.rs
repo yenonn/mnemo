@@ -31,8 +31,12 @@ static SYNONYM_MAP: &[(&str, &[&str])] = &[
         &["dark", "night mode", "dark theme", "night theme"],
     ),
     (
+        "coverage",
+        &["coverage", "test coverage", "code coverage"],
+    ),
+    (
         "preference",
-        &["preference", "like", "dislike", "hate", "love", "want"],
+        &["preference", "preferences", "prefer", "prefers", "like", "dislike", "hate", "love", "want"],
     ),
     // Tools
     (
@@ -200,5 +204,22 @@ mod tests {
             "task".to_string(),
         ]);
         assert_eq!(q, "todos OR tasks OR task");
+    }
+
+    #[test]
+    fn test_expand_query_coverage() {
+        let expanded = expand_query(&vec!["coverage".to_string()]);
+        assert!(expanded.contains(&"coverage".to_string()));
+        assert!(expanded.contains(&"test coverage".to_string()));
+        assert!(expanded.contains(&"code coverage".to_string()));
+    }
+
+    #[test]
+    fn test_expand_query_preference() {
+        let expanded = expand_query(&vec!["preference".to_string()]);
+        assert!(expanded.contains(&"preference".to_string()));
+        assert!(expanded.contains(&"preferences".to_string()));
+        assert!(expanded.contains(&"prefer".to_string()));
+        assert!(expanded.contains(&"prefers".to_string()));
     }
 }
