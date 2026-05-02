@@ -252,6 +252,10 @@ fn handle_remember(
                 }
             };
 
+            // Run lifecycle hooks
+            let hook_results = crate::lifecycle::LifecycleEngine::check_and_fire(db.conn(), &mut manager);
+            let hook_texts: Vec<String> = hook_results.iter().map(|h| h.to_string()).collect();
+
             let result = match memory_type {
                 "working" => manager.remember_working(content),
                 "episodic" => manager.remember_episodic(content, importance),
@@ -259,12 +263,19 @@ fn handle_remember(
             };
 
             match result {
-                Ok(mem_id) => McpResponse::success(
-                    id,
-                    json!({
-                        "content": [{"type": "text", "text": format!("Stored memory: {}", mem_id)}]
-                    }),
-                ),
+                Ok(mem_id) => {
+                    let response_text = if hook_texts.is_empty() {
+                        format!("Stored memory: {}", mem_id)
+                    } else {
+                        format!("{}\n\nStored memory: {}", hook_texts.join("\n"), mem_id)
+                    };
+                    McpResponse::success(
+                        id,
+                        json!({
+                            "content": [{"type": "text", "text": response_text}]
+                        }),
+                    )
+                }
                 Err(e) => McpResponse::error(id, -32603, format!("Store error: {}", e)),
             }
         }
