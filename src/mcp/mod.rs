@@ -536,20 +536,18 @@ fn handle_bind(
                 #[cfg(feature = "vec")]
                 let memories: Vec<crate::store::Memory> = {
                     let vstore = crate::store::VectorStore::new(db.conn());
-                    let gateway = crate::embed::EmbeddingGateway::from_env()
-                        .unwrap_or_else(crate::embed::EmbeddingGateway::new_default);
+                    let gateway = crate::embed::EmbeddingGateway::from_env_cached();
 
-                    if vstore.available() && gateway.dimensions() > 0 {
-                        manager
-                            .recall_hybrid(
-                                &query,
-                                &expanded,
-                                &types_to_search,
-                                20,
-                                &vstore,
-                                &gateway,
-                            )
-                            .unwrap_or_default()
+                    if vstore.available() {
+                        if let Some(gw) = gateway {
+                            manager
+                                .recall_hybrid(&query, &expanded, &types_to_search, 20, &vstore, gw)
+                                .unwrap_or_default()
+                        } else {
+                            manager
+                                .recall_expanded(&expanded, &types_to_search, 20)
+                                .unwrap_or_default()
+                        }
                     } else {
                         manager
                             .recall_expanded(&expanded, &types_to_search, 20)
@@ -618,7 +616,9 @@ fn handle_bind(
                         Ok(results) if !results.is_empty() => {
                             let extracted: Vec<String> = results
                                 .iter()
-                                .map(|r| format!("[{} | {:.2}] {}", r.tier, r.importance, r.content))
+                                .map(|r| {
+                                    format!("[{} | {:.2}] {}", r.tier, r.importance, r.content)
+                                })
                                 .collect();
                             let response_text = format!(
                                 "Confirmation required: The following memories were extracted but NOT stored. Reply with 'remember' to store them, or ignore to discard:\n\n{}",
@@ -631,14 +631,12 @@ fn handle_bind(
                                 }),
                             )
                         }
-                        _ => {
-                            McpResponse::success(
-                                id,
-                                json!({
-                                    "content": [{"type": "text", "text": "Store intent detected but nothing extracted for confirmation."}]
-                                }),
-                            )
-                        }
+                        _ => McpResponse::success(
+                            id,
+                            json!({
+                                "content": [{"type": "text", "text": "Store intent detected but nothing extracted for confirmation."}]
+                            }),
+                        ),
                     }
                 } else {
                     McpResponse::success(

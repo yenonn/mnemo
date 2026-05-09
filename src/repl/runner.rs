@@ -371,20 +371,18 @@ impl Repl {
             #[cfg(feature = "vec")]
             let memories: Vec<crate::store::Memory> = {
                 let vstore = crate::store::VectorStore::new(self.db.conn());
-                let gateway = crate::embed::EmbeddingGateway::from_env()
-                    .unwrap_or_else(crate::embed::EmbeddingGateway::new_default);
+                let gateway = crate::embed::EmbeddingGateway::from_env_cached();
 
-                if vstore.available() && gateway.dimensions() > 0 {
-                    manager
-                        .recall_hybrid(
-                            &query,
-                            &expanded,
-                            &types_to_search,
-                            limit,
-                            &vstore,
-                            &gateway,
-                        )
-                        .unwrap_or_default()
+                if vstore.available() {
+                    if let Some(gw) = gateway {
+                        manager
+                            .recall_hybrid(&query, &expanded, &types_to_search, limit, &vstore, gw)
+                            .unwrap_or_default()
+                    } else {
+                        manager
+                            .recall_expanded(&expanded, &types_to_search, limit)
+                            .unwrap_or_default()
+                    }
                 } else {
                     manager
                         .recall_expanded(&expanded, &types_to_search, limit)
