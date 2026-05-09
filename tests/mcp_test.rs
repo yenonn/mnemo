@@ -376,3 +376,105 @@ fn test_mcp_recall_with_per_request_agent_id() {
         text
     );
 }
+
+#[test]
+fn test_mcp_bind_tool_retrieve() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _tmp = tempfile::tempdir().unwrap();
+    env::set_var("HOME", _tmp.path());
+
+    // Store a memory first
+    let _ = handle_request(
+        McpRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(serde_json::Value::Number(1.into())),
+            method: "tools/call".to_string(),
+            params: Some(serde_json::json!({
+                "name": "remember",
+                "arguments": {
+                    "content": "User likes dark themes",
+                    "memory_type": "semantic"
+                }
+            })),
+        },
+        "mcp-bind-agent",
+    );
+
+    let resp = handle_request(
+        McpRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(serde_json::Value::Number(2.into())),
+            method: "tools/call".to_string(),
+            params: Some(serde_json::json!({
+                "name": "bind",
+                "arguments": {
+                    "text": "What are my preferences?"
+                }
+            })),
+        },
+        "mcp-bind-agent",
+    );
+    assert!(
+        resp.error.is_none(),
+        "BIND should not error: {:?}",
+        resp.error
+    );
+    let result = resp.result.unwrap();
+    let content = result.get("content").unwrap().as_array().unwrap();
+    assert!(!content.is_empty());
+}
+
+#[test]
+fn test_mcp_bind_tool_store() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _tmp = tempfile::tempdir().unwrap();
+    env::set_var("HOME", _tmp.path());
+
+    let resp = handle_request(
+        McpRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(serde_json::Value::Number(1.into())),
+            method: "tools/call".to_string(),
+            params: Some(serde_json::json!({
+                "name": "bind",
+                "arguments": {
+                    "text": "I prefer vim and dark mode"
+                }
+            })),
+        },
+        "mcp-bind-store-agent",
+    );
+    assert!(
+        resp.error.is_none(),
+        "BIND should not error: {:?}",
+        resp.error
+    );
+    let result = resp.result.unwrap();
+    let content = result.get("content").unwrap().as_array().unwrap();
+    assert!(!content.is_empty());
+}
+
+#[test]
+fn test_mcp_bind_tool_empty_text() {
+    let _guard = HOME_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _tmp = tempfile::tempdir().unwrap();
+    env::set_var("HOME", _tmp.path());
+
+    let resp = handle_request(
+        McpRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(serde_json::Value::Number(1.into())),
+            method: "tools/call".to_string(),
+            params: Some(serde_json::json!({
+                "name": "bind",
+                "arguments": {
+                    "text": ""
+                }
+            })),
+        },
+        "mcp-bind-empty-agent",
+    );
+    assert!(resp.error.is_some());
+    let err = resp.error.unwrap();
+    assert_eq!(err.code, -32602);
+}
