@@ -75,7 +75,31 @@ impl<'a> MemoryStore<'a> {
             params![&id, memory_type, content, now, importance, source_type, tags_str],
         )?;
 
+        #[cfg(feature = "vec")]
+        self.maybe_store_embedding(&id, content, memory_type);
+
         Ok(id)
+    }
+
+    #[cfg(feature = "vec")]
+    fn maybe_store_embedding(&self, memory_id: &str, content: &str, memory_type: &str) {
+        if memory_type == "working" {
+            return;
+        }
+
+        let vstore = super::VectorStore::new(self.conn);
+        if !vstore.available() {
+            return;
+        }
+
+        let gateway = match crate::embed::EmbeddingGateway::from_env() {
+            Some(g) => g,
+            None => return,
+        };
+
+        if let Ok(vec) = gateway.embed(content) {
+            let _ = vstore.insert(memory_id, &vec);
+        }
     }
 
     pub fn get(&self, id: &str) -> SqliteResult<Option<Memory>> {
