@@ -92,7 +92,7 @@ impl<'a> MemoryStore<'a> {
             return;
         }
 
-        let gateway = match crate::embed::EmbeddingGateway::from_env() {
+        let gateway = match crate::embed::EmbeddingGateway::from_env_cached() {
             Some(g) => g,
             None => return,
         };
