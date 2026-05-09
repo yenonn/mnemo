@@ -1,6 +1,9 @@
 use super::provider::{
     EmbedError, EmbeddingProvider, OllamaEmbeddingProvider, OpenAiEmbeddingProvider, StubProvider,
 };
+use std::sync::OnceLock;
+
+static GATEWAY_CACHE: OnceLock<Option<EmbeddingGateway>> = OnceLock::new();
 
 pub struct EmbeddingGateway {
     provider: Box<dyn EmbeddingProvider>,
@@ -40,6 +43,12 @@ impl EmbeddingGateway {
         }
 
         None
+    }
+
+    /// Build from environment variables, caching the result so that repeated
+    /// calls do not re-read env vars or re-allocate the provider.
+    pub fn from_env_cached() -> Option<&'static EmbeddingGateway> {
+        GATEWAY_CACHE.get_or_init(|| Self::from_env()).as_ref()
     }
 
     pub fn embed(&self, text: &str) -> Result<Vec<f32>, EmbedError> {
