@@ -20,17 +20,6 @@ pub struct VectorStore<'a> {
 impl<'a> VectorStore<'a> {
     pub fn new(conn: &'a Connection) -> Self {
         let available = Self::detect_vec0(conn);
-        if available {
-            // Best-effort: if creation fails we silently ignore it
-            // (e.g. dimension mismatch from a previous run).
-            let _ = conn.execute(
-                "CREATE VIRTUAL TABLE IF NOT EXISTS memory_vectors USING vec0(
-                    memory_id TEXT PRIMARY KEY,
-                    embedding FLOAT[1536]
-                )",
-                [],
-            );
-        }
         VectorStore { conn, available }
     }
 
@@ -42,10 +31,13 @@ impl<'a> VectorStore<'a> {
     /// Insert an embedding vector for a memory.
     ///
     /// No-op when `vec0` is unavailable.
+    /// If the table dimension doesn't match the embedding, recreates the table.
     pub fn insert(&self, memory_id: &str, embedding: &[f32]) -> SqliteResult<()> {
         if !self.available {
             return Ok(());
         }
+        let dim = embedding.len();
+        self.ensure_dimension(dim)?;
         let vec_json = vec_to_json(embedding);
         self.conn.execute(
             "INSERT INTO memory_vectors (memory_id, embedding) VALUES (?, vec_from_json(?))",
@@ -57,9 +49,9 @@ impl<'a> VectorStore<'a> {
     /// KNN search: returns `(memory_id, distance)` ordered by
     /// ascending distance (lower = closer).
     ///
-    /// Empty vector when `vec0` is unavailable.
+    /// Empty vector when `vec0` is unavailable or table doesn't exist.
     pub fn search(&self, query_vec: &[f32], limit: usize) -> SqliteResult<Vec<(String, f64)>> {
-        if !self.available {
+        if !self.available || !self.table_exists() {
             return Ok(Vec::new());
         }
         let vec_json = vec_to_json(query_vec);
@@ -80,9 +72,9 @@ impl<'a> VectorStore<'a> {
 
     /// Delete a vector by memory_id.
     ///
-    /// No-op when `vec0` is unavailable.
+    /// No-op when `vec0` is unavailable or table doesn't exist.
     pub fn delete(&self, memory_id: &str) -> SqliteResult<()> {
-        if !self.available {
+        if !self.available || !self.table_exists() {
             return Ok(());
         }
         self.conn.execute(
@@ -94,14 +86,76 @@ impl<'a> VectorStore<'a> {
 
     /// Count indexed vectors.
     ///
-    /// Returns `0` when `vec0` is unavailable.
+    /// Returns `0` when `vec0` is unavailable or table doesn't exist.
     pub fn count(&self) -> SqliteResult<usize> {
-        if !self.available {
+        if !self.available || !self.table_exists() {
             return Ok(0);
         }
         let mut stmt = self.conn.prepare("SELECT COUNT(*) FROM memory_vectors")?;
         let count: i64 = stmt.query_row([], |row| row.get(0))?;
         Ok(count as usize)
+    }
+
+    fn table_exists(&self) -> bool {
+        self.conn
+            .query_row(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='memory_vectors'",
+                [],
+                |_| Ok(true),
+            )
+            .unwrap_or(false)
+    }
+
+    fn get_stored_dimension(&self) -> Option<usize> {
+        self.conn
+            .query_row(
+                "SELECT value FROM _mnemo_meta WHERE key = 'vector_dimensions'",
+                [],
+                |row| {
+                    let s: String = row.get(0)?;
+                    Ok(s.parse::<usize>().unwrap_or(0))
+                },
+            )
+            .ok()
+            .filter(|&d| d > 0)
+    }
+
+    fn store_dimension(&self, dim: usize) -> SqliteResult<()> {
+        self.conn.execute(
+            "INSERT INTO _mnemo_meta (key, value) VALUES ('vector_dimensions', ?)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            [dim.to_string()],
+        )?;
+        Ok(())
+    }
+
+    fn create_table(&self, dim: usize) -> SqliteResult<()> {
+        self.conn.execute(
+            &format!(
+                "CREATE VIRTUAL TABLE memory_vectors USING vec0(
+                    memory_id TEXT PRIMARY KEY,
+                    embedding FLOAT[{}]
+                )",
+                dim
+            ),
+            [],
+        )?;
+        Ok(())
+    }
+
+    fn ensure_dimension(&self, dim: usize) -> SqliteResult<()> {
+        let needs_recreate = match self.get_stored_dimension() {
+            Some(d) if d == dim => !self.table_exists(), // correct dim but table missing
+            _ => true, // mismatch or no stored dim → recreate to be safe
+        };
+
+        if needs_recreate {
+            let _ = self.conn.execute("DROP TABLE IF EXISTS memory_vectors", []);
+            self.create_table(dim)?;
+            self.store_dimension(dim)?;
+        }
+
+        Ok(())
     }
 
     /// Try to create a temporary `vec0` table. If it succeeds,
